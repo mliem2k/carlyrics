@@ -1,0 +1,84 @@
+package com.spotifylyrics.data.local.database.entity
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import com.spotifylyrics.domain.model.Lyrics
+
+/**
+ * Room entity for cached lyrics
+ */
+@Entity(
+    tableName = "cached_lyrics",
+    indices = [Index(value = ["track", "artist"], unique = true)]
+)
+data class CachedLyricsEntity(
+    val track: String,
+    val artist: String,
+    val album: String?,
+    val lyrics: String,
+    val source: String,
+    val isSynced: Boolean = false,
+    val syncedLyrics: String? = null, // JSON string of synced lyrics
+    val createdAt: Long = System.currentTimeMillis(),
+    val expiresAt: Long = System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000) // 7 days
+) {
+    @PrimaryKey
+    var id: String = "${track}_$artist"
+}
+
+/**
+ * Extension function to convert domain model to entity
+ */
+fun Lyrics.toEntity(source: String): CachedLyricsEntity {
+    return CachedLyricsEntity(
+        track = track,
+        artist = artist,
+        album = album,
+        lyrics = plainLyrics,
+        source = source,
+        isSynced = syncedLyrics != null,
+        syncedLyrics = syncedLyrics?.let { syncLyrics ->
+            // Convert list of synced lyrics to JSON string
+            syncLyrics.joinToString("\n") { "[${it.startTime}]${it.text}" }
+        }
+    )
+}
+
+/**
+ * Extension function to convert entity to domain model
+ */
+fun CachedLyricsEntity.toDomainModel(): Lyrics {
+    return Lyrics(
+        track = track,
+        artist = artist,
+        album = album,
+        plainLyrics = lyrics,
+        syncedLyrics = syncedLyrics?.let { syncLyricsJson ->
+            // Parse synced lyrics from LRC-like format
+            parseSyncedLyrics(syncLyricsJson)
+        }
+    )
+}
+
+/**
+ * Parse synced lyrics from string format
+ */
+private fun parseSyncedLyrics(syncedLyricsJson: String): List<com.spotifylyrics.domain.model.SyncedLyricLine> {
+    return syncedLyricsJson.lines()
+        .mapNotNull { line ->
+            // Parse [MM:SS.ms]Lyric text format
+            val timeRegex = "\\[(\\d+):(\\d+)\\.(\\d+)\\]".toRegex()
+            val match = timeRegex.find(line)
+            if (match != null) {
+                val minutes = match.groupValues[1].toLong()
+                val seconds = match.groupValues[2].toLong()
+                val milliseconds = match.groupValues[3].toLong()
+                val startTime = minutes * 60000 + seconds * 1000 + milliseconds
+                val text = line.substring(match.range.last + 1)
+                com.spotifylyrics.domain.model.SyncedLyricLine(startTime, text)
+            } else {
+                null
+            }
+        }
+}
