@@ -13,9 +13,12 @@ TAG="nightly_${DATE}"
 APK_SRC="app/build/outputs/apk/release/app-release.apk"
 APK_OUT="carlyrics_nightly_${DATE}.apk"
 
+VERSION_CODE=$(date -u +%s)
+
 echo "==> Building release APK (${TAG})"
 ./gradlew assembleRelease \
   -PversionName="nightly_${DATE}" \
+  -PversionCode="${VERSION_CODE}" \
   --quiet
 
 [[ -f "$APK_SRC" ]] || { echo "ERROR: APK not found at $APK_SRC" >&2; exit 1; }
