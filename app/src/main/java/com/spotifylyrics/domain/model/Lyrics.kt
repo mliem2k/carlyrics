@@ -1,4 +1,4 @@
-package com.spotifylyrics.domain.model
+package com.mliem.carlyrics.domain.model
 
 /**
  * Domain model representing lyrics for a track

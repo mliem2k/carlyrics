@@ -1,9 +1,9 @@
-package com.spotifylyrics.presentation.settings
+package com.mliem.carlyrics.presentation.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spotifylyrics.domain.usecase.ClearCacheUseCase
-import com.spotifylyrics.domain.repository.SettingsRepository
+import com.mliem.carlyrics.domain.usecase.ClearCacheUseCase
+import com.mliem.carlyrics.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.lyricsmanager
+package com.mliem.carlyrics.presentation.lyricsmanager
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,9 +53,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.spotifylyrics.domain.model.Lyrics
-import com.spotifylyrics.presentation.theme.SpotifyGreen
-import com.spotifylyrics.presentation.theme.SpotifyLightGray
+import com.mliem.carlyrics.domain.model.Lyrics
+import com.mliem.carlyrics.presentation.theme.SpotifyGreen
+import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
 private val DarkSurface = Color(0xFF282828)
 private val DarkBg = Color(0xFF121212)

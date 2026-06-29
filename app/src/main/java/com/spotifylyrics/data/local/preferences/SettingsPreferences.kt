@@ -1,4 +1,4 @@
-package com.spotifylyrics.data.local.preferences
+package com.mliem.carlyrics.data.local.preferences
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

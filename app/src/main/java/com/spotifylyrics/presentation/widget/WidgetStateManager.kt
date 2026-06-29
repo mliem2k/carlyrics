@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.widget
+package com.mliem.carlyrics.presentation.widget
 
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidgetManager

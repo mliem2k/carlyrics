@@ -1,14 +1,14 @@
-package com.spotifylyrics.service.auto.session
+package com.mliem.carlyrics.service.auto.session
 
 import android.content.Intent
 import androidx.car.app.Screen
 import androidx.car.app.Session
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.spotifylyrics.service.LyricsOrchestrator
-import com.spotifylyrics.service.auto.screen.CarLyricsScreen
-import com.spotifylyrics.service.auto.screen.CarMainScreen
-import com.spotifylyrics.service.media.MediaSessionManager
+import com.mliem.carlyrics.service.LyricsOrchestrator
+import com.mliem.carlyrics.service.auto.screen.CarLyricsScreen
+import com.mliem.carlyrics.service.auto.screen.CarMainScreen
+import com.mliem.carlyrics.service.media.MediaSessionManager
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors

@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.companion
+package com.mliem.carlyrics.presentation.companion
 
 import org.junit.Before
 import org.junit.Test

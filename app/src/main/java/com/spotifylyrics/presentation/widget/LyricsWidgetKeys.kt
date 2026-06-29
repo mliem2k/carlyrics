@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.widget
+package com.mliem.carlyrics.presentation.widget
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey

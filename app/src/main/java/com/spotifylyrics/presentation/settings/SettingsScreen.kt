@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.settings
+package com.mliem.carlyrics.presentation.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.spotifylyrics.presentation.theme.SpotifyGreen
-import com.spotifylyrics.presentation.theme.SpotifyLightGray
+import com.mliem.carlyrics.presentation.theme.SpotifyGreen
+import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.companion
+package com.mliem.carlyrics.presentation.companion
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -168,7 +168,7 @@ fun CompanionLyricsScreen(
  */
 @Composable
 private fun CurrentTrackHeader(
-    track: com.spotifylyrics.domain.model.TrackInfo?,
+    track: com.mliem.carlyrics.domain.model.TrackInfo?,
     modifier: Modifier = Modifier
 ) {
     Column(

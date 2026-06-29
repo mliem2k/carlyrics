@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'com.spotifylyrics'
+    namespace 'com.mliem.carlyrics'
     compileSdk 36  // Android 15 (latest as of June 2026)
 
     defaultConfig {
-        applicationId "com.spotifylyrics"
+        applicationId "com.mliem.carlyrics"
         minSdk 30  // Android 11 minimum for Android Auto
         targetSdk 36
         versionCode (project.findProperty("versionCode") as String)?.toInteger() ?: 2
@@ -31,9 +31,9 @@ android {
         release {
             def keystoreFile = System.getenv("SIGNING_KEYSTORE_PATH") ?: rootProject.file("spotify_lyrics_key.jks").absolutePath
             storeFile file(keystoreFile)
-            storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: "spotify_lyrics_2024"
-            keyAlias System.getenv("SIGNING_KEY_ALIAS") ?: "spotify_lyrics"
-            keyPassword System.getenv("SIGNING_KEY_PASSWORD") ?: "spotify_lyrics_2024"
+            storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: "spotifylyrics"
+            keyAlias System.getenv("SIGNING_KEY_ALIAS") ?: "spotify-lyrics"
+            keyPassword System.getenv("SIGNING_KEY_PASSWORD") ?: "spotifylyrics"
         }
     }
 

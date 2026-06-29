@@ -1,9 +1,9 @@
-package com.spotifylyrics.service.media
+package com.mliem.carlyrics.service.media
 
 import android.content.Context
-import com.spotifylyrics.di.ApplicationScope
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.service.notification.TrackInfoEmitter
+import com.mliem.carlyrics.di.ApplicationScope
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.service.notification.TrackInfoEmitter
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay

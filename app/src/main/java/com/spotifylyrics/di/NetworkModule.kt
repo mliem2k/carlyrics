@@ -1,10 +1,10 @@
-package com.spotifylyrics.di
+package com.mliem.carlyrics.di
 
-import com.spotifylyrics.data.remote.api.GeniusApiService
-import com.spotifylyrics.data.remote.api.LrclibApiService
-import com.spotifylyrics.data.remote.api.LyricsOvhApiService
-import com.spotifylyrics.data.remote.api.MusixmatchApiService
-import com.spotifylyrics.BuildConfig
+import com.mliem.carlyrics.data.remote.api.GeniusApiService
+import com.mliem.carlyrics.data.remote.api.LrclibApiService
+import com.mliem.carlyrics.data.remote.api.LyricsOvhApiService
+import com.mliem.carlyrics.data.remote.api.MusixmatchApiService
+import com.mliem.carlyrics.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

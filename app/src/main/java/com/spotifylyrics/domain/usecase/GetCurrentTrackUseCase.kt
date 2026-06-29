@@ -1,7 +1,7 @@
-package com.spotifylyrics.domain.usecase
+package com.mliem.carlyrics.domain.usecase
 
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.domain.repository.TrackRepository
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.repository.TrackRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

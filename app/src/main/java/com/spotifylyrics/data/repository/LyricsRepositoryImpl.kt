@@ -1,16 +1,16 @@
-package com.spotifylyrics.data.repository
+package com.mliem.carlyrics.data.repository
 
-import com.spotifylyrics.data.local.database.dao.LyricsDao
-import com.spotifylyrics.data.local.database.entity.toDomainModel
-import com.spotifylyrics.data.local.database.entity.toEntity
-import com.spotifylyrics.data.remote.api.GeniusApiService
-import com.spotifylyrics.data.remote.api.LrclibApiService
-import com.spotifylyrics.data.remote.api.LyricsOvhApiService
-import com.spotifylyrics.data.remote.api.MusixmatchApiService
-import com.spotifylyrics.domain.model.Lyrics
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.domain.repository.LyricsRepository
-import com.spotifylyrics.domain.util.LrcParser
+import com.mliem.carlyrics.data.local.database.dao.LyricsDao
+import com.mliem.carlyrics.data.local.database.entity.toDomainModel
+import com.mliem.carlyrics.data.local.database.entity.toEntity
+import com.mliem.carlyrics.data.remote.api.GeniusApiService
+import com.mliem.carlyrics.data.remote.api.LrclibApiService
+import com.mliem.carlyrics.data.remote.api.LyricsOvhApiService
+import com.mliem.carlyrics.data.remote.api.MusixmatchApiService
+import com.mliem.carlyrics.domain.model.Lyrics
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.repository.LyricsRepository
+import com.mliem.carlyrics.domain.util.LrcParser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -24,7 +24,7 @@ class LyricsRepositoryImpl @Inject constructor(
     private val geniusApiService: GeniusApiService,
     private val musixmatchApiService: MusixmatchApiService,
     private val lyricsOvhApiService: LyricsOvhApiService,
-    private val settingsPreferences: com.spotifylyrics.data.local.preferences.SettingsPreferences
+    private val settingsPreferences: com.mliem.carlyrics.data.local.preferences.SettingsPreferences
 ) : LyricsRepository {
 
     companion object {

@@ -1,14 +1,14 @@
-package com.spotifylyrics.presentation.navigation
+package com.mliem.carlyrics.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.spotifylyrics.presentation.companion.CompanionLyricsScreen
-import com.spotifylyrics.presentation.lyricsmanager.LyricsManagerScreen
-import com.spotifylyrics.presentation.main.MainScreen
-import com.spotifylyrics.presentation.settings.SettingsScreen
+import com.mliem.carlyrics.presentation.companion.CompanionLyricsScreen
+import com.mliem.carlyrics.presentation.lyricsmanager.LyricsManagerScreen
+import com.mliem.carlyrics.presentation.main.MainScreen
+import com.mliem.carlyrics.presentation.settings.SettingsScreen
 
 object Routes {
     const val MAIN = "main"

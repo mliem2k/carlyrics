@@ -1,10 +1,10 @@
-package com.spotifylyrics.data.local.database.dao
+package com.mliem.carlyrics.data.local.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.spotifylyrics.data.local.database.entity.TrackInfoEntity
+import com.mliem.carlyrics.data.local.database.entity.TrackInfoEntity
 import kotlinx.coroutines.flow.Flow
 
 /**

@@ -1,10 +1,10 @@
-package com.spotifylyrics.di
+package com.mliem.carlyrics.di
 
 import android.content.Context
 import androidx.room.Room
-import com.spotifylyrics.data.local.database.LyricsDatabase
-import com.spotifylyrics.data.local.database.dao.LyricsDao
-import com.spotifylyrics.data.local.database.dao.TrackInfoDao
+import com.mliem.carlyrics.data.local.database.LyricsDatabase
+import com.mliem.carlyrics.data.local.database.dao.LyricsDao
+import com.mliem.carlyrics.data.local.database.dao.TrackInfoDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

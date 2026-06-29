@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.main
+package com.mliem.carlyrics.presentation.main
 
 import android.content.Context
 import androidx.compose.foundation.layout.*
@@ -18,9 +18,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.presentation.theme.SpotifyGreen
-import com.spotifylyrics.presentation.theme.SpotifyLightGray
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.presentation.theme.SpotifyGreen
+import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package com.spotifylyrics.domain.util
+package com.mliem.carlyrics.domain.util
 
 /**
  * Utility for fuzzy matching lyrics queries

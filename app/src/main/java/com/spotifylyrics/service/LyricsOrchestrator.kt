@@ -1,10 +1,10 @@
-package com.spotifylyrics.service
+package com.mliem.carlyrics.service
 
-import com.spotifylyrics.domain.model.Lyrics
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.domain.repository.LyricsRepository
-import com.spotifylyrics.presentation.widget.WidgetStateManager
-import com.spotifylyrics.service.media.MediaSessionManager
+import com.mliem.carlyrics.domain.model.Lyrics
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.repository.LyricsRepository
+import com.mliem.carlyrics.presentation.widget.WidgetStateManager
+import com.mliem.carlyrics.service.media.MediaSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +19,7 @@ class LyricsOrchestrator @Inject constructor(
     private val mediaSessionManager: MediaSessionManager,
     private val lyricsRepository: LyricsRepository,
     private val widgetStateManager: WidgetStateManager,
-    @com.spotifylyrics.di.ApplicationScope private val scope: CoroutineScope
+    @com.mliem.carlyrics.di.ApplicationScope private val scope: CoroutineScope
 ) {
     private val _currentLyrics = MutableStateFlow<Lyrics?>(null)
     val currentLyrics: StateFlow<Lyrics?> = _currentLyrics.asStateFlow()

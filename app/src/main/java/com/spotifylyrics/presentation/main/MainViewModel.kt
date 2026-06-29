@@ -1,10 +1,10 @@
-package com.spotifylyrics.presentation.main
+package com.mliem.carlyrics.presentation.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.domain.usecase.GetCurrentTrackUseCase
-import com.spotifylyrics.domain.usecase.GetLyricsUseCase
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.usecase.GetCurrentTrackUseCase
+import com.mliem.carlyrics.domain.usecase.GetLyricsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -74,7 +74,7 @@ class MainViewModel @Inject constructor(
  */
 data class MainUiState(
     val currentTrack: TrackInfo? = null,
-    val lyrics: com.spotifylyrics.domain.model.Lyrics? = null,
+    val lyrics: com.mliem.carlyrics.domain.model.Lyrics? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )

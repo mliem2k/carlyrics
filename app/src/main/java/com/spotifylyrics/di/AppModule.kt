@@ -1,11 +1,11 @@
-package com.spotifylyrics.di
+package com.mliem.carlyrics.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import com.spotifylyrics.data.local.preferences.SettingsPreferences
-import com.spotifylyrics.data.local.preferences.SettingsPreferencesImpl
+import com.mliem.carlyrics.data.local.preferences.SettingsPreferences
+import com.mliem.carlyrics.data.local.preferences.SettingsPreferencesImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

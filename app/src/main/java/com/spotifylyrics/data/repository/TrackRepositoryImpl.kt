@@ -1,11 +1,11 @@
-package com.spotifylyrics.data.repository
+package com.mliem.carlyrics.data.repository
 
-import com.spotifylyrics.data.local.database.dao.TrackInfoDao
-import com.spotifylyrics.data.local.database.entity.toDomainModel
-import com.spotifylyrics.data.local.database.entity.toEntity
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.domain.repository.TrackRepository
-import com.spotifylyrics.service.notification.TrackInfoEmitter
+import com.mliem.carlyrics.data.local.database.dao.TrackInfoDao
+import com.mliem.carlyrics.data.local.database.entity.toDomainModel
+import com.mliem.carlyrics.data.local.database.entity.toEntity
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.repository.TrackRepository
+import com.mliem.carlyrics.service.notification.TrackInfoEmitter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

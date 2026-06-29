@@ -1,11 +1,11 @@
-package com.spotifylyrics.presentation.companion
+package com.mliem.carlyrics.presentation.companion
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.domain.repository.LyricsRepository
-import com.spotifylyrics.domain.repository.TrackRepository
-import com.spotifylyrics.service.media.MediaSessionManager
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.repository.LyricsRepository
+import com.mliem.carlyrics.domain.repository.TrackRepository
+import com.mliem.carlyrics.service.media.MediaSessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,7 +70,7 @@ class CompanionLyricsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            val trackInfo = com.spotifylyrics.domain.model.TrackInfo(
+            val trackInfo = com.mliem.carlyrics.domain.model.TrackInfo(
                 track = title,
                 artist = artist
             )

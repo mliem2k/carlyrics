@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Spotify Lyrics</string>
+    <string name="app_name">CarLyrics</string>
 
     <!-- Main Screen -->
     <string name="no_track_playing">No track playing</string>

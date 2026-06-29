@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.theme
+package com.mliem.carlyrics.presentation.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -49,7 +49,7 @@ private val SpotifyLightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun SpotifyLyricsTheme(
+fun CarLyricsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
