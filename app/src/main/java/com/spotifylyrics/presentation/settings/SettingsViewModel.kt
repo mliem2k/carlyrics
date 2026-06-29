@@ -29,6 +29,11 @@ class SettingsViewModel @Inject constructor(
 
     private fun loadSettings() {
         viewModelScope.launch {
+            settingsRepository.isLrclibEnabled().collect { enabled ->
+                _uiState.value = _uiState.value.copy(lrclibEnabled = enabled)
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.isGeniusEnabled().collect { enabled ->
                 _uiState.value = _uiState.value.copy(geniusEnabled = enabled)
             }
@@ -43,6 +48,10 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(autoFetchEnabled = enabled)
             }
         }
+    }
+
+    fun toggleLrclib(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setLrclibEnabled(enabled) }
     }
 
     fun toggleGenius(enabled: Boolean) {
@@ -79,6 +88,7 @@ class SettingsViewModel @Inject constructor(
  * UI state for SettingsScreen
  */
 data class SettingsUiState(
+    val lrclibEnabled: Boolean = true,
     val geniusEnabled: Boolean = true,
     val musixmatchEnabled: Boolean = true,
     val autoFetchEnabled: Boolean = true,

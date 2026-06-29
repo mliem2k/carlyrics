@@ -7,6 +7,12 @@ import kotlinx.coroutines.flow.Flow
  */
 interface SettingsRepository {
     /**
+     * Whether LRCLIB is enabled as lyrics source (synced lyrics)
+     */
+    suspend fun setLrclibEnabled(enabled: Boolean)
+    fun isLrclibEnabled(): Flow<Boolean>
+
+    /**
      * Whether Genius is enabled as lyrics source
      */
     suspend fun setGeniusEnabled(enabled: Boolean)

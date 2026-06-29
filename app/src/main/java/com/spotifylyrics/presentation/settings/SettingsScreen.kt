@@ -54,14 +54,20 @@ fun SettingsScreen(
             // Lyrics sources
             SettingsSection(title = "Lyrics Sources") {
                 SwitchSetting(
+                    title = "LRCLIB (synced)",
+                    description = "Free synced lyrics — tried first for timestamped lines",
+                    checked = uiState.lrclibEnabled,
+                    onCheckedChange = { viewModel.toggleLrclib(it) }
+                )
+                SwitchSetting(
                     title = "Genius",
-                    description = "Fetch lyrics from Genius.com",
+                    description = "Plain lyrics fallback via Genius.com",
                     checked = uiState.geniusEnabled,
                     onCheckedChange = { viewModel.toggleGenius(it) }
                 )
                 SwitchSetting(
                     title = "Musixmatch",
-                    description = "Fetch lyrics from Musixmatch",
+                    description = "Plain lyrics fallback via Musixmatch",
                     checked = uiState.musixmatchEnabled,
                     onCheckedChange = { viewModel.toggleMusixmatch(it) }
                 )

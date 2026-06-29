@@ -14,11 +14,20 @@ class SettingsRepositoryImpl @Inject constructor(
 ) : SettingsRepository {
 
     companion object {
+        private const val KEY_LRCLIB_ENABLED = "lrclib_enabled"
         private const val KEY_GENIUS_ENABLED = "genius_enabled"
         private const val KEY_MUSIXMATCH_ENABLED = "musixmatch_enabled"
         private const val KEY_PREFERRED_SOURCE = "preferred_source"
         private const val KEY_AUTO_FETCH = "auto_fetch"
         private const val KEY_CACHE_EXPIRY_DAYS = "cache_expiry_days"
+    }
+
+    override suspend fun setLrclibEnabled(enabled: Boolean) {
+        preferences.setBoolean(KEY_LRCLIB_ENABLED, enabled)
+    }
+
+    override fun isLrclibEnabled(): Flow<Boolean> {
+        return preferences.getBoolean(KEY_LRCLIB_ENABLED, true)
     }
 
     override suspend fun setGeniusEnabled(enabled: Boolean) {
