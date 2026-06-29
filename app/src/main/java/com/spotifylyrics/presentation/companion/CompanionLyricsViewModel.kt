@@ -102,11 +102,11 @@ class CompanionLyricsViewModel @Inject constructor(
         val lyrics = _uiState.value.lyrics
         if (lyrics.isEmpty()) return
         
-        var newIndex = 0
+        var newIndex = -1
         for (i in lyrics.indices) {
             val line = lyrics[i]
             val nextLine = if (i + 1 < lyrics.size) lyrics[i + 1] else null
-            
+
             if (line.timeMs <= playbackTimeMs) {
                 if (nextLine == null || playbackTimeMs < nextLine.timeMs) {
                     newIndex = i
@@ -114,8 +114,8 @@ class CompanionLyricsViewModel @Inject constructor(
                 }
             }
         }
-        
-        if (_currentLyricIndex.value != newIndex) {
+
+        if (newIndex >= 0 && _currentLyricIndex.value != newIndex) {
             _currentLyricIndex.value = newIndex
         }
     }

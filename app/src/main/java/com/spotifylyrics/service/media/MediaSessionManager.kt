@@ -1,12 +1,11 @@
 package com.spotifylyrics.service.media
 
 import android.content.Context
+import com.spotifylyrics.di.ApplicationScope
 import com.spotifylyrics.domain.model.TrackInfo
 import com.spotifylyrics.service.notification.TrackInfoEmitter
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,9 +17,9 @@ import javax.inject.Singleton
 @Singleton
 class MediaSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val trackInfoEmitter: TrackInfoEmitter
+    private val trackInfoEmitter: TrackInfoEmitter,
+    @ApplicationScope private val scope: CoroutineScope
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val _currentTrackFlow = MutableStateFlow<TrackInfo?>(null)
     val currentTrackFlow: StateFlow<TrackInfo?> = _currentTrackFlow.asStateFlow()

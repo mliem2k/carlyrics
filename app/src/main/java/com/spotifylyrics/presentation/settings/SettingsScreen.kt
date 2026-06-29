@@ -2,28 +2,32 @@ package com.spotifylyrics.presentation.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.spotifylyrics.presentation.theme.SpotifyGreen
 import com.spotifylyrics.presentation.theme.SpotifyLightGray
 
-/**
- * Settings Screen - app preferences and cache management
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -32,17 +36,17 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )
                     }
                 },
-                backgroundColor = Color.Black,
-                elevation = 0.dp
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
             )
         },
-        backgroundColor = Color.Black,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Color.Black,
         modifier = Modifier.fillMaxSize()
     ) { paddingValues ->
         Column(
@@ -51,11 +55,10 @@ fun SettingsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Lyrics sources
             SettingsSection(title = "Lyrics Sources") {
                 SwitchSetting(
                     title = "LRCLIB (synced)",
-                    description = "Free synced lyrics — tried first for timestamped lines",
+                    description = "Free synced lyrics, tried first for timestamped lines",
                     checked = uiState.lrclibEnabled,
                     onCheckedChange = { viewModel.toggleLrclib(it) }
                 )
@@ -75,7 +78,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Cache settings
             SettingsSection(title = "Cache") {
                 SwitchSetting(
                     title = "Auto-fetch Lyrics",
@@ -87,27 +89,12 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick = {
-                        viewModel.clearCache()
-                        viewModel.cacheClearedHandled()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0xFF282828),
-                        contentColor = Color.White
-                    ),
+                    onClick = { viewModel.clearCache() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF282828)),
                     shape = RoundedCornerShape(50.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Clear Cache", color = Color.White)
-                }
-
-                if (uiState.cacheCleared) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Cache cleared!",
-                        color = SpotifyGreen,
-                        style = MaterialTheme.typography.body2
-                    )
                 }
             }
         }
@@ -122,15 +109,14 @@ fun SettingsSection(
     Column {
         Text(
             text = title,
-            style = MaterialTheme.typography.subtitle1,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = SpotifyLightGray,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
-            backgroundColor = Color(0xFF282828),
-            elevation = 0.dp,
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -154,29 +140,27 @@ fun SwitchSetting(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.subtitle2,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
                 color = Color.White
             )
             Text(
                 text = description,
-                style = MaterialTheme.typography.body2,
+                style = MaterialTheme.typography.bodyMedium,
                 color = SpotifyLightGray
             )
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.width(16.dp))
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = SpotifyGreen,
+                checkedThumbColor = Color.White,
+                checkedTrackColor = SpotifyGreen,
                 uncheckedThumbColor = Color.Gray,
-                checkedTrackColor = SpotifyGreen.copy(alpha = 0.5f),
                 uncheckedTrackColor = Color.Gray.copy(alpha = 0.5f)
             )
         )

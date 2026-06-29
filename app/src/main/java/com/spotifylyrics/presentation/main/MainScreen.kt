@@ -1,16 +1,15 @@
 package com.spotifylyrics.presentation.main
 
 import android.content.Context
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,15 +18,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.spotifylyrics.domain.model.TrackInfo
 import com.spotifylyrics.presentation.theme.SpotifyGreen
 import com.spotifylyrics.presentation.theme.SpotifyLightGray
-import kotlinx.coroutines.launch
 
-/**
- * Main Screen - displays current track info and lyrics
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
@@ -37,18 +32,14 @@ fun MainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val scaffoldState = rememberScaffoldState()
-    val scope = rememberCoroutineScope()
 
     val hasNotificationPermission = isNotificationListenerEnabled(context)
 
     Scaffold(
-        scaffoldState = scaffoldState,
         topBar = {
             TopAppBar(
                 title = { Text("CarLyrics", color = Color.White) },
-                backgroundColor = Color.Black,
-                elevation = 0.dp,
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
                 actions = {
                     IconButton(onClick = onNavigateToLyricsManager) {
                         Icon(
@@ -67,7 +58,7 @@ fun MainScreen(
                 }
             )
         },
-        backgroundColor = Color.Black,
+        containerColor = Color.Black,
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
@@ -81,32 +72,29 @@ fun MainScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Permission warning
             if (!hasNotificationPermission) {
                 PermissionWarningCard(
                     onOpenSettings = { openNotificationSettings(context) }
                 )
             }
 
-            // Track info card
             TrackInfoCard(
                 trackInfo = uiState.currentTrack,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Lyrics card
+            val lyrics = uiState.lyrics
+            val currentTrack = uiState.currentTrack
+
             when {
                 uiState.isLoading -> {
                     LoadingIndicator()
                 }
 
-                uiState.lyrics != null -> {
+                lyrics != null -> {
                     Button(
                         onClick = onNavigateToLyrics,
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = SpotifyGreen,
-                            contentColor = Color.White
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = SpotifyGreen),
                         shape = RoundedCornerShape(50.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -118,16 +106,14 @@ fun MainScreen(
                         Text("Open Companion View", fontWeight = FontWeight.Bold)
                     }
                     LyricsCard(
-                        lyrics = uiState.lyrics!!.plainLyrics,
+                        lyrics = lyrics.plainLyrics,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                uiState.currentTrack != null && uiState.currentTrack!!.isPlaying -> {
+                currentTrack != null && currentTrack.isPlaying -> {
                     EmptyLyricsCard(
-                        onFetchLyrics = {
-                            uiState.currentTrack?.let { viewModel.fetchLyrics(it) }
-                        },
+                        onFetchLyrics = { viewModel.fetchLyrics(currentTrack) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -137,12 +123,11 @@ fun MainScreen(
                 }
             }
 
-            // Error message
             if (uiState.error != null) {
                 Text(
                     text = uiState.error ?: "Unknown error",
                     color = Color.Red,
-                    style = MaterialTheme.typography.body2,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(8.dp)
                 )
             }
@@ -157,8 +142,7 @@ fun PermissionWarningCard(
 ) {
     Card(
         modifier = modifier,
-        backgroundColor = Color(0xFF282828),
-        elevation = 0.dp,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(
@@ -167,23 +151,20 @@ fun PermissionWarningCard(
         ) {
             Text(
                 text = "Notification Access Required",
-                style = MaterialTheme.typography.h6,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Grant notification access to detect music",
-                style = MaterialTheme.typography.body2,
+                style = MaterialTheme.typography.bodyMedium,
                 color = SpotifyLightGray
             )
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onOpenSettings,
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = SpotifyGreen,
-                    contentColor = Color.White
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = SpotifyGreen),
                 shape = RoundedCornerShape(50.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -200,8 +181,7 @@ fun TrackInfoCard(
 ) {
     Card(
         modifier = modifier,
-        backgroundColor = Color(0xFF282828),
-        elevation = 0.dp,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(
@@ -211,13 +191,13 @@ fun TrackInfoCard(
             if (trackInfo == null || trackInfo.track.isEmpty()) {
                 Text(
                     text = "No track playing",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = SpotifyLightGray
                 )
             } else {
                 Text(
                     text = trackInfo.track,
-                    style = MaterialTheme.typography.h5,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     textAlign = TextAlign.Center
@@ -225,14 +205,14 @@ fun TrackInfoCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = trackInfo.artist,
-                    style = MaterialTheme.typography.subtitle1,
+                    style = MaterialTheme.typography.titleMedium,
                     color = SpotifyLightGray,
                     textAlign = TextAlign.Center
                 )
                 if (trackInfo.album != null) {
                     Text(
                         text = trackInfo.album,
-                        style = MaterialTheme.typography.body2,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF6A6A6A),
                         textAlign = TextAlign.Center
                     )
@@ -253,7 +233,7 @@ fun LoadingIndicator() {
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Loading lyrics...",
-            style = MaterialTheme.typography.body2,
+            style = MaterialTheme.typography.bodyMedium,
             color = SpotifyLightGray
         )
     }
@@ -266,8 +246,7 @@ fun LyricsCard(
 ) {
     Card(
         modifier = modifier,
-        backgroundColor = Color(0xFF282828),
-        elevation = 0.dp,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(
@@ -277,14 +256,14 @@ fun LyricsCard(
         ) {
             Text(
                 text = "Lyrics",
-                style = MaterialTheme.typography.h6,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = lyrics,
-                style = MaterialTheme.typography.body1,
+                style = MaterialTheme.typography.bodyLarge,
                 color = SpotifyLightGray
             )
         }
@@ -298,8 +277,7 @@ fun EmptyLyricsCard(
 ) {
     Card(
         modifier = modifier,
-        backgroundColor = Color(0xFF282828),
-        elevation = 0.dp,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(
@@ -308,16 +286,13 @@ fun EmptyLyricsCard(
         ) {
             Text(
                 text = "No lyrics loaded",
-                style = MaterialTheme.typography.h6,
+                style = MaterialTheme.typography.titleLarge,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onFetchLyrics,
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = SpotifyGreen,
-                    contentColor = Color.White
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = SpotifyGreen),
                 shape = RoundedCornerShape(50.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -331,8 +306,7 @@ fun EmptyLyricsCard(
 fun NoTrackCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        backgroundColor = Color(0xFF282828),
-        elevation = 0.dp,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
         shape = RoundedCornerShape(8.dp)
     ) {
         Column(
@@ -340,15 +314,8 @@ fun NoTrackCard() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Play music in Spotify or another app",
-                style = MaterialTheme.typography.body1,
-                color = SpotifyLightGray,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "to see lyrics here",
-                style = MaterialTheme.typography.body1,
+                text = "Play music in Spotify or another app to see lyrics here",
+                style = MaterialTheme.typography.bodyLarge,
                 color = SpotifyLightGray,
                 textAlign = TextAlign.Center
             )

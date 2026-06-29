@@ -1,57 +1,51 @@
 package com.spotifylyrics.presentation.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Shapes
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-/**
- * Spotify-inspired theme
- */
-private val SpotifyDarkColors = darkColors(
+private val SpotifyDarkColorScheme = darkColorScheme(
     primary = SpotifyGreen,
-    primaryVariant = SpotifyGreenDark,
-    secondary = SpotifyGreen,
-    secondaryVariant = SpotifyGreenLight,
-    background = DarkBackground,
-    surface = DarkSurface,
-    error = ErrorRed,
     onPrimary = SpotifyBlack,
-    onSecondary = SpotifyBlack,
-    onBackground = DarkOnBackground,
-    onSurface = DarkOnSurface,
-    onError = SpotifyWhite
-)
-
-private val SpotifyLightColors = lightColors(
-    primary = SpotifyGreen,
-    primaryVariant = SpotifyGreenDark,
+    primaryContainer = SpotifyGreenDark,
+    onPrimaryContainer = SpotifyWhite,
     secondary = SpotifyGreen,
-    secondaryVariant = SpotifyGreenDark,
-    background = LightBackground,
-    surface = LightSurface,
+    onSecondary = SpotifyBlack,
+    background = DarkBackground,
+    onBackground = DarkOnBackground,
+    surface = DarkSurface,
+    onSurface = DarkOnSurface,
+    surfaceVariant = SpotifyMediumGray,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = DarkOutline,
     error = ErrorRed,
-    onPrimary = SpotifyWhite,
-    onSecondary = SpotifyWhite,
-    onBackground = LightOnSurface,
-    onSurface = LightOnSurface,
     onError = SpotifyWhite
 )
 
-private val SpotifyShapes = Shapes(
-    small = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
-    medium = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-    large = androidx.compose.foundation.shape.RoundedCornerShape(0.dp) // No rounded corners for cards, like Spotify
+private val SpotifyLightColorScheme = lightColorScheme(
+    primary = SpotifyGreen,
+    onPrimary = SpotifyWhite,
+    primaryContainer = SpotifyGreenLight,
+    onPrimaryContainer = SpotifyBlack,
+    secondary = SpotifyGreen,
+    onSecondary = SpotifyWhite,
+    background = LightBackground,
+    onBackground = LightOnSurface,
+    surface = LightSurface,
+    onSurface = LightOnSurface,
+    surfaceVariant = Color(0xFFF0F0F0),
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = LightOutline,
+    error = ErrorRed,
+    onError = SpotifyWhite
 )
 
 @Composable
@@ -59,7 +53,7 @@ fun SpotifyLyricsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) SpotifyDarkColors else SpotifyLightColors
+    val colorScheme = if (darkTheme) SpotifyDarkColorScheme else SpotifyLightColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -71,9 +65,8 @@ fun SpotifyLyricsTheme(
     }
 
     MaterialTheme(
-        colors = colors,
+        colorScheme = colorScheme,
         typography = SpotifyTypography,
-        shapes = SpotifyShapes,
         content = content
     )
 }

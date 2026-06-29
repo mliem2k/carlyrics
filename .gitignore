@@ -99,3 +99,4 @@ landing/node_modules/
 landing/.astro/
 landing/dist/
 docs/
+.vercel

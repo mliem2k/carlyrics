@@ -13,25 +13,24 @@ import com.spotifylyrics.domain.model.Lyrics
     indices = [Index(value = ["track", "artist"], unique = true)]
 )
 data class CachedLyricsEntity(
+    @PrimaryKey val id: String,
     val track: String,
     val artist: String,
     val album: String?,
     val lyrics: String,
     val source: String,
     val isSynced: Boolean = false,
-    val syncedLyrics: String? = null, // JSON string of synced lyrics
+    val syncedLyrics: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val expiresAt: Long = System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000) // 7 days
-) {
-    @PrimaryKey
-    var id: String = "${track}_$artist"
-}
+    val expiresAt: Long = System.currentTimeMillis() + (7 * 24 * 60 * 60 * 1000)
+)
 
 /**
  * Extension function to convert domain model to entity
  */
 fun Lyrics.toEntity(source: String): CachedLyricsEntity {
     return CachedLyricsEntity(
+        id = "${track}_$artist",
         track = track,
         artist = artist,
         album = album,
@@ -39,7 +38,6 @@ fun Lyrics.toEntity(source: String): CachedLyricsEntity {
         source = source,
         isSynced = syncedLyrics != null,
         syncedLyrics = syncedLyrics?.let { syncLyrics ->
-            // Convert list of synced lyrics to JSON string
             syncLyrics.joinToString("\n") { "[${it.startTime}]${it.text}" }
         }
     )
@@ -64,12 +62,12 @@ fun CachedLyricsEntity.toDomainModel(): Lyrics {
 /**
  * Parse synced lyrics from string format
  */
+private val SYNCED_TIME_REGEX = Regex("\\[(\\d+):(\\d+)\\.(\\d+)\\]")
+
 private fun parseSyncedLyrics(syncedLyricsJson: String): List<com.spotifylyrics.domain.model.SyncedLyricLine> {
     return syncedLyricsJson.lines()
         .mapNotNull { line ->
-            // Parse [MM:SS.ms]Lyric text format
-            val timeRegex = "\\[(\\d+):(\\d+)\\.(\\d+)\\]".toRegex()
-            val match = timeRegex.find(line)
+            val match = SYNCED_TIME_REGEX.find(line)
             if (match != null) {
                 val minutes = match.groupValues[1].toLong()
                 val seconds = match.groupValues[2].toLong()

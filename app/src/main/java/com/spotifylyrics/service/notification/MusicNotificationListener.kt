@@ -8,9 +8,10 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.spotifylyrics.domain.model.TrackInfo
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -185,10 +186,13 @@ class MusicNotificationListener : NotificationListenerService() {
  */
 @Singleton
 class TrackInfoEmitter @Inject constructor() {
-    private val _trackInfoChannel = Channel<TrackInfo>(capacity = Channel.CONFLATED)
-    val trackInfoFlow: Flow<TrackInfo> = _trackInfoChannel.receiveAsFlow()
+    private val _trackInfoFlow = MutableSharedFlow<TrackInfo>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val trackInfoFlow: Flow<TrackInfo> = _trackInfoFlow.asSharedFlow()
 
     fun emitTrackInfo(trackInfo: TrackInfo) {
-        _trackInfoChannel.trySend(trackInfo)
+        _trackInfoFlow.tryEmit(trackInfo)
     }
 }

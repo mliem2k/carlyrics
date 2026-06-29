@@ -4,6 +4,7 @@ import com.spotifylyrics.data.remote.api.GeniusApiService
 import com.spotifylyrics.data.remote.api.LrclibApiService
 import com.spotifylyrics.data.remote.api.LyricsOvhApiService
 import com.spotifylyrics.data.remote.api.MusixmatchApiService
+import com.spotifylyrics.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,8 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+                    else HttpLoggingInterceptor.Level.NONE
         }
     }
 

@@ -1,81 +1,42 @@
 package com.spotifylyrics.domain.util
 
 import com.spotifylyrics.domain.model.SyncedLyricLine
-import java.util.regex.Pattern
 
-/**
- * Parser for LRC (Lyric) file format
- * LRC format: [mm:ss.ms]Lyric text
- */
 object LrcParser {
 
-    private val TIME_TAG_PATTERN = Pattern.compile("\\[(\\d+):(\\d+)(?:\\.(\\d+))?\\]")
+    private val TIME_TAG_REGEX = Regex("\\[(\\d+):(\\d+)(?:\\.(\\d+))?\\]")
 
-    /**
-     * Parse LRC content into a list of synced lyric lines
-     */
     fun parse(lrcContent: String): List<SyncedLyricLine> {
-        val lines = lrcContent.lines()
-        val syncedLyrics = mutableListOf<SyncedLyricLine>()
-
-        for (line in lines) {
-            val parsedLines = parseLine(line)
-            syncedLyrics.addAll(parsedLines)
-        }
-
-        return syncedLyrics.sortedBy { it.startTime }
+        return lrcContent.lines()
+            .flatMap { parseLine(it) }
+            .sortedBy { it.startTime }
     }
 
-    /**
-     * Parse a single LRC line
-     * Can contain multiple time tags for the same lyric
-     */
     private fun parseLine(line: String): List<SyncedLyricLine> {
-        val result = mutableListOf<SyncedLyricLine>()
-        val matcher = TIME_TAG_PATTERN.matcher(line)
-        val timeTags = mutableListOf<Long>()
-        var lastMatchEnd = 0
+        val matches = TIME_TAG_REGEX.findAll(line).toList()
+        if (matches.isEmpty()) return emptyList()
 
-        // Find all time tags
-        while (matcher.find()) {
-            val minutes = matcher.group(1)?.toLong() ?: 0
-            val seconds = matcher.group(2)?.toLong() ?: 0
-            val milliseconds = matcher.group(3)?.toLong()?.let { it * 10 } ?: 0 // Convert to ms
-
-            val timeMs = minutes * 60000 + seconds * 1000 + milliseconds
-            timeTags.add(timeMs)
-            lastMatchEnd = matcher.end()
+        val timeTags = matches.map { match ->
+            val minutes = match.groupValues[1].toLong()
+            val seconds = match.groupValues[2].toLong()
+            val millis = match.groupValues[3].takeIf { it.isNotEmpty() }?.toLong()?.times(10) ?: 0L
+            minutes * 60_000 + seconds * 1_000 + millis
         }
 
-        // Extract lyric text (after last time tag)
-        val lyricText = line.substring(lastMatchEnd).trim()
+        val lyricText = line.substring(matches.last().range.last + 1).trim()
+        if (lyricText.isEmpty()) return emptyList()
 
-        // Create synced lyric lines for each time tag
-        if (timeTags.isNotEmpty() && lyricText.isNotEmpty()) {
-            timeTags.forEach { timeMs ->
-                result.add(SyncedLyricLine(timeMs, lyricText))
-            }
-        }
-
-        return result
+        return timeTags.map { SyncedLyricLine(it, lyricText) }
     }
 
-    /**
-     * Convert synced lyrics back to LRC format
-     */
     fun toLrcFormat(syncedLyrics: List<SyncedLyricLine>): String {
         return syncedLyrics.joinToString("\n") { line ->
-            val minutes = line.startTime / 60000
-            val seconds = (line.startTime % 60000) / 1000
-            val milliseconds = (line.startTime % 1000) / 10
-            "[%02d:%02d.%02d]%s".format(minutes, seconds, milliseconds, line.text)
+            val minutes = line.startTime / 60_000
+            val seconds = (line.startTime % 60_000) / 1_000
+            val millis = (line.startTime % 1_000) / 10
+            "[%02d:%02d.%02d]%s".format(minutes, seconds, millis, line.text)
         }
     }
 
-    /**
-     * Validate LRC format
-     */
-    fun isValidLrc(content: String): Boolean {
-        return TIME_TAG_PATTERN.matcher(content).find()
-    }
+    fun isValidLrc(content: String): Boolean = TIME_TAG_REGEX.containsMatchIn(content)
 }

@@ -28,7 +28,7 @@ object DatabaseModule {
             LyricsDatabase::class.java,
             DATABASE_NAME
         )
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

@@ -27,7 +27,11 @@ class LyricsOrchestrator @Inject constructor(
     private val _currentLyricLine = MutableStateFlow("")
     val currentLyricLine: StateFlow<String> = _currentLyricLine.asStateFlow()
 
+    private var started = false
+
     fun start() {
+        if (started) return
+        started = true
         observeTrackChanges()
         observePlaybackPosition()
     }

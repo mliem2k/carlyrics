@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
@@ -54,11 +54,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.spotifylyrics.domain.model.Lyrics
+import com.spotifylyrics.presentation.theme.SpotifyGreen
+import com.spotifylyrics.presentation.theme.SpotifyLightGray
 
-private val SpotifyGreen = Color(0xFF1DB954)
 private val DarkSurface = Color(0xFF282828)
 private val DarkBg = Color(0xFF121212)
-private val LightGray = Color(0xFFB3B3B3)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,12 +100,12 @@ fun LyricsManagerScreen(
                 title = { Text("Lyrics Library", color = Color.White, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.clearAllCache() }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Clear all", tint = LightGray)
+                        Icon(Icons.Default.Delete, contentDescription = "Clear all", tint = SpotifyLightGray)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
@@ -134,12 +134,12 @@ fun LyricsManagerScreen(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search cached lyrics…", color = LightGray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = LightGray) },
+                placeholder = { Text("Search cached lyrics…", color = SpotifyLightGray) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = SpotifyLightGray) },
                 trailingIcon = {
                     if (uiState.searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = LightGray)
+                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = SpotifyLightGray)
                         }
                     }
                 },
@@ -163,14 +163,14 @@ fun LyricsManagerScreen(
                     Text(
                         text = if (uiState.searchQuery.isBlank()) "No cached lyrics yet.\nTap + to import an LRC file."
                                else "No results for \"${uiState.searchQuery}\"",
-                        color = LightGray,
+                        color = SpotifyLightGray,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
             } else {
                 Text(
                     text = "${uiState.lyrics.size} cached",
-                    color = LightGray,
+                    color = SpotifyLightGray,
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -221,7 +221,7 @@ private fun CachedLyricsCard(lyrics: Lyrics) {
                 )
                 Text(
                     text = lyrics.artist,
-                    color = LightGray,
+                    color = SpotifyLightGray,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1
                 )
@@ -237,7 +237,7 @@ private fun CachedLyricsCard(lyrics: Lyrics) {
             Spacer(Modifier.width(8.dp))
             Text(
                 text = "${lyrics.plainLyrics.lines().size} lines",
-                color = LightGray,
+                color = SpotifyLightGray,
                 style = MaterialTheme.typography.labelSmall
             )
         }
@@ -261,7 +261,7 @@ private fun ImportLrcDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "File loaded (${lrcContent.lines().size} lines). Enter the track details:",
-                    color = LightGray,
+                    color = SpotifyLightGray,
                     style = MaterialTheme.typography.bodySmall
                 )
                 OutlinedTextField(
@@ -290,7 +290,7 @@ private fun ImportLrcDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = LightGray)
+                Text("Cancel", color = SpotifyLightGray)
             }
         }
     )
@@ -301,8 +301,8 @@ private fun dialogFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedTextColor = Color.White,
     unfocusedTextColor = Color.White,
     focusedBorderColor = SpotifyGreen,
-    unfocusedBorderColor = LightGray,
+    unfocusedBorderColor = SpotifyLightGray,
     focusedLabelColor = SpotifyGreen,
-    unfocusedLabelColor = LightGray,
+    unfocusedLabelColor = SpotifyLightGray,
     cursorColor = SpotifyGreen
 )
