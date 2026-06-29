@@ -12,7 +12,9 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.spotifylyrics.R
 import com.spotifylyrics.presentation.main.MainActivity
+import com.spotifylyrics.service.LyricsOrchestrator
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Foreground service for continuous music detection
@@ -20,6 +22,9 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class LyricsForegroundService : Service() {
+
+    @Inject
+    lateinit var lyricsOrchestrator: LyricsOrchestrator
 
     companion object {
         private const val NOTIFICATION_ID = 1001
@@ -45,6 +50,7 @@ class LyricsForegroundService : Service() {
         super.onCreate()
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
+        lyricsOrchestrator.start()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

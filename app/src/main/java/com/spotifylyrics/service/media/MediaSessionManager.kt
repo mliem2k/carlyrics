@@ -1,50 +1,114 @@
 package com.spotifylyrics.service.media
 
 import android.content.Context
+import com.spotifylyrics.domain.model.TrackInfo
+import com.spotifylyrics.service.notification.TrackInfoEmitter
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Manager for active media sessions
- * Alternative to NotificationListener for track detection
- */
 @Singleton
 class MediaSessionManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val trackInfoEmitter: TrackInfoEmitter
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val _currentTrack = MutableStateFlow<com.spotifylyrics.domain.model.TrackInfo?>(null)
-    val currentTrack: StateFlow<com.spotifylyrics.domain.model.TrackInfo?> = _currentTrack.asStateFlow()
+    private val _currentTrackFlow = MutableStateFlow<TrackInfo?>(null)
+    val currentTrackFlow: StateFlow<TrackInfo?> = _currentTrackFlow.asStateFlow()
 
-    /**
-     * Start monitoring media sessions
-     */
-    fun startMonitoring() {
-        // Implementation would use MediaSessionManager to actively listen
-        // This is a simplified placeholder
-        // In production, you would use MediaBrowserCompat or similar
+    // Legacy alias kept for compatibility
+    val currentTrack: StateFlow<TrackInfo?> = _currentTrackFlow
+
+    private val _playbackPositionFlow = MutableStateFlow(0L)
+    val playbackPositionFlow: StateFlow<Long> = _playbackPositionFlow.asStateFlow()
+
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+
+    private var playbackStartWallMs = 0L
+    private var playbackStartPositionMs = 0L
+
+    init {
+        scope.launch {
+            trackInfoEmitter.trackInfoFlow.collect { trackInfo ->
+                val wasPlaying = _currentTrackFlow.value?.isPlaying == true
+                val isNewTrack = _currentTrackFlow.value?.getKey() != trackInfo.getKey()
+
+                _currentTrackFlow.value = trackInfo
+                _isPlaying.value = trackInfo.isPlaying
+
+                if (isNewTrack && trackInfo.isPlaying) {
+                    resetPlaybackPosition()
+                } else if (!wasPlaying && trackInfo.isPlaying) {
+                    resumePositionTracking()
+                }
+            }
+        }
+        startPositionTicker()
     }
 
-    /**
-     * Stop monitoring media sessions
-     */
-    fun stopMonitoring() {
-        // Stop monitoring
+    private fun startPositionTicker() {
+        scope.launch {
+            while (true) {
+                delay(500)
+                if (_isPlaying.value) {
+                    val elapsed = System.currentTimeMillis() - playbackStartWallMs
+                    _playbackPositionFlow.value = playbackStartPositionMs + elapsed
+                }
+            }
+        }
     }
 
-    /**
-     * Update current track info
-     */
+    private fun resetPlaybackPosition() {
+        playbackStartWallMs = System.currentTimeMillis()
+        playbackStartPositionMs = 0L
+        _playbackPositionFlow.value = 0L
+    }
+
+    private fun resumePositionTracking() {
+        playbackStartWallMs = System.currentTimeMillis()
+        playbackStartPositionMs = _playbackPositionFlow.value
+    }
+
+    fun startMonitoring() {}
+
+    fun stopMonitoring() {}
+
     fun updateTrack(track: String, artist: String, album: String?, isPlaying: Boolean) {
-        _currentTrack.value = com.spotifylyrics.domain.model.TrackInfo(
+        _currentTrackFlow.value = TrackInfo(
             track = track,
             artist = artist,
             album = album,
             isPlaying = isPlaying
         )
+        _isPlaying.value = isPlaying
+    }
+
+    fun togglePlayPause() {
+        _isPlaying.value = !_isPlaying.value
+        if (_isPlaying.value) resumePositionTracking()
+    }
+
+    fun skipToNext() {
+        resetPlaybackPosition()
+    }
+
+    fun skipToPrevious() {
+        resetPlaybackPosition()
+    }
+
+    fun seekTo(positionMs: Long) {
+        playbackStartWallMs = System.currentTimeMillis()
+        playbackStartPositionMs = positionMs
+        _playbackPositionFlow.value = positionMs
     }
 }
