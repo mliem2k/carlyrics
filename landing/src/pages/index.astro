@@ -3,32 +3,26 @@ const GITHUB_REPO = 'mliem2k/carlyrics';
 const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 const features = [
   {
-    icon: '🎵',
     title: 'Synced Lyrics',
     desc: 'Timestamped karaoke style lyrics via LRCLIB. Lines highlight in real time as music plays.',
   },
   {
-    icon: '🚗',
     title: 'Android Auto',
     desc: 'See lyrics on your car\'s head unit while driving, safely and hands-free.',
   },
   {
-    icon: '📱',
     title: 'Companion View',
-    desc: 'Full-screen scrolling lyrics on your phone with auto-scroll and night mode.',
+    desc: 'Full screen scrolling lyrics on your phone with auto-scroll and night mode.',
   },
   {
-    icon: '🔔',
     title: 'Live Notification',
     desc: 'Current lyric line updates live in the status bar notification. No screen unlock needed.',
   },
   {
-    icon: '🖼️',
     title: 'Home Widget',
     desc: 'Glance widget shows track, artist and current lyric right on your home screen.',
   },
   {
-    icon: '📚',
     title: 'Lyrics Library',
     desc: 'Browse cached lyrics, search, and import your own LRC files for offline use.',
   },
@@ -68,7 +62,6 @@ const features = [
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Nav ── */
     nav {
       position: sticky;
       top: 0;
@@ -99,7 +92,6 @@ const features = [
     }
     .nav-links a:hover { color: var(--text); }
 
-    /* ── Hero ── */
     .hero {
       display: flex;
       flex-direction: column;
@@ -169,7 +161,6 @@ const features = [
     }
     .btn-secondary:hover { background: var(--surface2); }
 
-    /* ── Lyric demo ── */
     .demo {
       margin: 0 auto;
       padding: 4rem 1.5rem;
@@ -200,10 +191,6 @@ const features = [
       border-radius: 8px;
       background: linear-gradient(135deg, #1DB954 0%, #0d4a24 100%);
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
     }
 
     .demo-info .title { color: var(--text); font-weight: 600; font-size: 0.95rem; }
@@ -217,7 +204,6 @@ const features = [
       font-size: 1rem;
     }
 
-    /* ── Features ── */
     .features {
       padding: 5rem 1.5rem;
       max-width: 1100px;
@@ -257,11 +243,9 @@ const features = [
     }
     .card:hover { border-color: rgba(29,185,84,0.3); transform: translateY(-3px); }
 
-    .card-icon { font-size: 2rem; margin-bottom: 1rem; }
-    .card-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .card-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--green); }
     .card-desc { color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
 
-    /* ── Platforms ── */
     .platforms {
       padding: 4rem 1.5rem;
       background: var(--surface);
@@ -280,16 +264,11 @@ const features = [
     }
 
     .platform-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
       color: var(--muted);
       font-size: 0.9rem;
+      font-weight: 500;
     }
-    .platform-item .icon { font-size: 2.5rem; }
 
-    /* ── CTA ── */
     .cta {
       padding: 6rem 1.5rem;
       text-align: center;
@@ -305,7 +284,6 @@ const features = [
 
     .cta p { color: var(--muted); margin-bottom: 2.5rem; max-width: 500px; margin-left: auto; margin-right: auto; }
 
-    /* ── Footer ── */
     footer {
       padding: 2rem 1.5rem;
       text-align: center;
@@ -324,26 +302,25 @@ const features = [
 <body>
 
   <nav>
-    <a href="#" class="nav-logo">🎵 CarLyrics</a>
+    <a href="#" class="nav-logo">CarLyrics</a>
     <div class="nav-links">
       <a href="#features">Features</a>
-      <a href="https://github.com/{GITHUB_REPO}" target="_blank" rel="noopener">GitHub</a>
+      <a href={`https://github.com/${GITHUB_REPO}`} target="_blank" rel="noopener">GitHub</a>
     </div>
   </nav>
 
-  <!-- Hero -->
   <section class="hero">
     <div class="badge">
-      <span>★</span> Free &amp; Open Source
+      <span>*</span> Free and Open Source
     </div>
     <h1>Lyrics that follow<br /><span>your music, anywhere</span></h1>
     <p class="hero-sub">
-      CarLyrics brings real-time synced lyrics to Android Auto, your phone's lock screen,
+      CarLyrics brings real time synced lyrics to Android Auto, your phone's lock screen,
       home screen widget, and notification shade. All at once.
     </p>
     <div class="hero-actions">
       <a href={RELEASES_URL} class="btn btn-primary">
-        ⬇️ Download APK
+        Download APK
       </a>
       <a href={`https://github.com/${GITHUB_REPO}`} class="btn btn-secondary" target="_blank" rel="noopener">
         View on GitHub
@@ -351,11 +328,10 @@ const features = [
     </div>
   </section>
 
-  <!-- Lyric demo card -->
   <div class="demo">
     <div class="demo-card">
       <div class="demo-track">
-        <div class="demo-art">🎵</div>
+        <div class="demo-art"></div>
         <div class="demo-info">
           <div class="title">Bohemian Rhapsody</div>
           <div class="artist">Queen</div>
@@ -368,14 +344,12 @@ const features = [
     </div>
   </div>
 
-  <!-- Features -->
   <section class="features" id="features">
     <p class="section-label">Everything you need</p>
     <h2 class="section-title">Lyrics everywhere you listen</h2>
     <div class="grid">
       {features.map(f => (
         <div class="card">
-          <div class="card-icon">{f.icon}</div>
           <div class="card-title">{f.title}</div>
           <p class="card-desc">{f.desc}</p>
         </div>
@@ -383,30 +357,16 @@ const features = [
     </div>
   </section>
 
-  <!-- Platforms -->
   <section class="platforms">
     <h2>Works across your whole Android setup</h2>
     <div class="platform-row">
-      <div class="platform-item">
-        <span class="icon">📱</span>
-        <span>Android Phone</span>
-      </div>
-      <div class="platform-item">
-        <span class="icon">🚗</span>
-        <span>Android Auto</span>
-      </div>
-      <div class="platform-item">
-        <span class="icon">🖥️</span>
-        <span>Android Automotive</span>
-      </div>
-      <div class="platform-item">
-        <span class="icon">🖼️</span>
-        <span>Home Screen Widget</span>
-      </div>
+      <div class="platform-item">Android Phone</div>
+      <div class="platform-item">Android Auto</div>
+      <div class="platform-item">Android Automotive</div>
+      <div class="platform-item">Home Screen Widget</div>
     </div>
   </section>
 
-  <!-- CTA -->
   <section class="cta">
     <h2>Ready to sync your lyrics?</h2>
     <p>
@@ -414,7 +374,7 @@ const features = [
       Requires Android 11+ and notification access.
     </p>
     <a href={RELEASES_URL} class="btn btn-primary">
-      ⬇️ Download latest APK
+      Download latest APK
     </a>
   </section>
 
