@@ -17,7 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.combine
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 @EntryPoint
@@ -45,14 +45,13 @@ class CarLyricsSession : Session() {
             override fun onStart(owner: LifecycleOwner) {
                 observeLiveData(orchestrator, mediaManager, screen)
             }
+            override fun onDestroy(owner: LifecycleOwner) {
+                scope.cancel()
+                lyricsScreen = null
+            }
         })
 
         return CarMainScreen(carContext)
-    }
-
-    override fun onDestroy() {
-        scope.cancel()
-        lyricsScreen = null
     }
 
     private fun observeLiveData(
