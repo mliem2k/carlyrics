@@ -44,7 +44,7 @@ fun MainScreen(
         scaffoldState = scaffoldState,
         topBar = {
             TopAppBar(
-                title = { Text("Spotify Lyrics", color = Color.White) },
+                title = { Text("CarLyrics", color = Color.White) },
                 backgroundColor = Color.Black,
                 elevation = 0.dp,
                 actions = {
