@@ -29,7 +29,7 @@ android {
 
     signingConfigs {
         release {
-            def keystoreFile = System.getenv("SIGNING_KEYSTORE_PATH") ?: rootProject.file("spotify-lyrics-key.jks").absolutePath
+            def keystoreFile = System.getenv("SIGNING_KEYSTORE_PATH") ?: rootProject.file("spotify_lyrics_key.jks").absolutePath
             storeFile file(keystoreFile)
             storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: "spotify_lyrics_2024"
             keyAlias System.getenv("SIGNING_KEY_ALIAS") ?: "spotify_lyrics"
