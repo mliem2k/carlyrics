@@ -51,7 +51,7 @@ class CompanionLyricsViewModel @Inject constructor(
             mediaSessionManager.currentTrackFlow.collect { trackInfo ->
                 trackInfo?.let { track ->
                     _uiState.value = _uiState.value.copy(currentTrack = track)
-                    fetchLyrics(track.artist, track.title)
+                    fetchLyrics(track.artist, track.track)
                 }
             }
         }
@@ -69,29 +69,32 @@ class CompanionLyricsViewModel @Inject constructor(
     private fun fetchLyrics(artist: String, title: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            
-            try {
-                val lyrics = lyricsRepository.getLyrics(artist, title)
-                
-                if (lyrics != null) {
+
+            val trackInfo = com.spotifylyrics.domain.model.TrackInfo(
+                track = title,
+                artist = artist
+            )
+            lyricsRepository.getLyrics(trackInfo)
+                .onSuccess { lyrics ->
+                    val lines = lyrics.syncedLyrics?.map { sl ->
+                        LyricLine(text = sl.text, timeMs = sl.startTime)
+                    } ?: lyrics.plainLyrics.lines()
+                        .filter { it.isNotBlank() }
+                        .map { LyricLine(text = it) }
+
                     _uiState.value = _uiState.value.copy(
-                        lyrics = lyrics.lines,
+                        lyrics = lines,
                         isLoading = false,
                         error = null
                     )
                     _currentLyricIndex.value = 0
-                } else {
+                }
+                .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "Lyrics not found"
+                        error = e.message
                     )
                 }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message
-                )
-            }
         }
     }
     
