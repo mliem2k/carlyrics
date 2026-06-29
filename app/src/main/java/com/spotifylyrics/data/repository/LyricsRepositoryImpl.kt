@@ -4,6 +4,7 @@ import com.spotifylyrics.data.local.database.dao.LyricsDao
 import com.spotifylyrics.data.local.database.entity.toDomainModel
 import com.spotifylyrics.data.local.database.entity.toEntity
 import com.spotifylyrics.data.remote.api.GeniusApiService
+import com.spotifylyrics.data.remote.api.LrclibApiService
 import com.spotifylyrics.data.remote.api.LyricsOvhApiService
 import com.spotifylyrics.data.remote.api.MusixmatchApiService
 import com.spotifylyrics.domain.model.Lyrics
@@ -19,6 +20,7 @@ import javax.inject.Inject
  */
 class LyricsRepositoryImpl @Inject constructor(
     private val lyricsDao: LyricsDao,
+    private val lrclibApiService: LrclibApiService,
     private val geniusApiService: GeniusApiService,
     private val musixmatchApiService: MusixmatchApiService,
     private val lyricsOvhApiService: LyricsOvhApiService,
@@ -26,6 +28,7 @@ class LyricsRepositoryImpl @Inject constructor(
 ) : LyricsRepository {
 
     companion object {
+        private const val SOURCE_LRCLIB = "lrclib"
         private const val SOURCE_GENIUS = "genius"
         private const val SOURCE_MUSIXMATCH = "musixmatch"
         private const val SOURCE_LYRICS_OVH = "lyrics_ovh"
@@ -33,43 +36,37 @@ class LyricsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLyrics(trackInfo: TrackInfo): Result<Lyrics> {
-        // First check cache
-        val cached = lyricsDao.getLyricsByTrackAndArtistSync(
-            trackInfo.track,
-            trackInfo.artist
-        )
+        // Check cache first
+        val cached = lyricsDao.getLyricsByTrackAndArtistSync(trackInfo.track, trackInfo.artist)
         if (cached != null && cached.expiresAt > System.currentTimeMillis()) {
             return Result.success(cached.toDomainModel())
         }
 
-        // Try fetching from APIs in order
-        val sources = listOf(
-            SOURCE_GENIUS to geniusApiService,
-            SOURCE_MUSIXMATCH to musixmatchApiService,
-            SOURCE_LYRICS_OVH to lyricsOvhApiService
+        // 1. Try LRCLIB first — only source providing synced (timestamped) lyrics
+        lrclibApiService.fetchLyrics(trackInfo)?.let { lyrics ->
+            cacheLyrics(lyrics, SOURCE_LRCLIB)
+            return Result.success(lyrics)
+        }
+
+        // 2. Fall back to plain-lyrics scraping sources
+        val plainSources = listOf(
+            SOURCE_GENIUS to suspend { geniusApiService.fetchLyrics(trackInfo) },
+            SOURCE_MUSIXMATCH to suspend { musixmatchApiService.fetchLyrics(trackInfo) },
+            SOURCE_LYRICS_OVH to suspend { lyricsOvhApiService.fetchLyrics(trackInfo) }
         )
 
-        for ((source, api) in sources) {
+        for ((source, fetch) in plainSources) {
             try {
-                val lyrics = when (source) {
-                    SOURCE_GENIUS -> (api as GeniusApiService).fetchLyrics(trackInfo)
-                    SOURCE_MUSIXMATCH -> (api as MusixmatchApiService).fetchLyrics(trackInfo)
-                    SOURCE_LYRICS_OVH -> (api as LyricsOvhApiService).fetchLyrics(trackInfo)
-                    else -> continue
-                }
-
-                if (lyrics != null) {
-                    // Cache the lyrics
+                fetch()?.let { lyrics ->
                     cacheLyrics(lyrics, source)
                     return Result.success(lyrics)
                 }
-            } catch (e: Exception) {
-                // Continue to next source
+            } catch (_: Exception) {
                 continue
             }
         }
 
-        return Result.failure(Exception("No lyrics found for this track"))
+        return Result.failure(Exception("No lyrics found for ${trackInfo.artist} – ${trackInfo.track}"))
     }
 
     override fun getCachedLyrics(track: String, artist: String): Flow<Lyrics?> {

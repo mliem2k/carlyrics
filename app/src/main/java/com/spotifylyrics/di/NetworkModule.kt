@@ -1,6 +1,7 @@
 package com.spotifylyrics.di
 
 import com.spotifylyrics.data.remote.api.GeniusApiService
+import com.spotifylyrics.data.remote.api.LrclibApiService
 import com.spotifylyrics.data.remote.api.LyricsOvhApiService
 import com.spotifylyrics.data.remote.api.MusixmatchApiService
 import dagger.Module
@@ -63,5 +64,13 @@ object NetworkModule {
         okHttpClient: OkHttpClient
     ): LyricsOvhApiService {
         return LyricsOvhApiService(okHttpClient)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLrclibApiService(
+        okHttpClient: OkHttpClient
+    ): LrclibApiService {
+        return LrclibApiService(okHttpClient)
     }
 }
