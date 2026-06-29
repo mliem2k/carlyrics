@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,6 +50,13 @@ fun MainScreen(
                 backgroundColor = Color.Black,
                 elevation = 0.dp,
                 actions = {
+                    IconButton(onClick = onNavigateToLyricsManager) {
+                        Icon(
+                            imageVector = Icons.Default.LibraryMusic,
+                            contentDescription = "Lyrics Library",
+                            tint = Color.White
+                        )
+                    }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -92,6 +101,22 @@ fun MainScreen(
                 }
 
                 uiState.lyrics != null -> {
+                    Button(
+                        onClick = onNavigateToLyrics,
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = SpotifyGreen,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(50.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.MusicNote,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("Open Companion View", fontWeight = FontWeight.Bold)
+                    }
                     LyricsCard(
                         lyrics = uiState.lyrics!!.plainLyrics,
                         modifier = Modifier.fillMaxWidth()
