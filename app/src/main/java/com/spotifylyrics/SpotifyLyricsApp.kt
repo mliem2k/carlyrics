@@ -1,4 +1,4 @@
-package com.spotifylyrics
+package com.mliem.carlyrics
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp

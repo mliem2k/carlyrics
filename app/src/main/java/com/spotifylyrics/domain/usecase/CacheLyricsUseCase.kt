@@ -1,7 +1,7 @@
-package com.spotifylyrics.domain.usecase
+package com.mliem.carlyrics.domain.usecase
 
-import com.spotifylyrics.domain.model.Lyrics
-import com.spotifylyrics.domain.repository.LyricsRepository
+import com.mliem.carlyrics.domain.model.Lyrics
+import com.mliem.carlyrics.domain.repository.LyricsRepository
 import javax.inject.Inject
 
 /**

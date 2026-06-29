@@ -1,6 +1,6 @@
-package com.spotifylyrics.domain.util
+package com.mliem.carlyrics.domain.util
 
-import com.spotifylyrics.domain.model.SyncedLyricLine
+import com.mliem.carlyrics.domain.model.SyncedLyricLine
 
 object LrcParser {
 

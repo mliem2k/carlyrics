@@ -1,4 +1,4 @@
-package com.spotifylyrics.domain.repository
+package com.mliem.carlyrics.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 

@@ -1,4 +1,4 @@
-package com.spotifylyrics.service.notification
+package com.mliem.carlyrics.service.notification
 
 import android.app.Notification
 import android.content.Intent
@@ -6,7 +6,7 @@ import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import com.spotifylyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.model.TrackInfo
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +51,7 @@ class MusicNotificationListener : NotificationListenerService() {
         )
 
         // Broadcast action for track changes
-        const val ACTION_TRACK_CHANGED = "com.spotifylyrics.TRACK_CHANGED"
+        const val ACTION_TRACK_CHANGED = "com.mliem.carlyrics.TRACK_CHANGED"
 
         // Intent extras
         const val EXTRA_TRACK = "track"

@@ -1,11 +1,11 @@
-package com.spotifylyrics.presentation.lyricsmanager
+package com.mliem.carlyrics.presentation.lyricsmanager
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spotifylyrics.domain.model.Lyrics
-import com.spotifylyrics.domain.repository.LyricsRepository
-import com.spotifylyrics.domain.usecase.ClearCacheUseCase
-import com.spotifylyrics.domain.usecase.ImportLrcFileUseCase
+import com.mliem.carlyrics.domain.model.Lyrics
+import com.mliem.carlyrics.domain.repository.LyricsRepository
+import com.mliem.carlyrics.domain.usecase.ClearCacheUseCase
+import com.mliem.carlyrics.domain.usecase.ImportLrcFileUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

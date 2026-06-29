@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.theme
+package com.mliem.carlyrics.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

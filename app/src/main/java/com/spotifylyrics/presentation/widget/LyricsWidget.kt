@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.widget
+package com.mliem.carlyrics.presentation.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -28,7 +28,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.spotifylyrics.presentation.main.MainActivity
+import com.mliem.carlyrics.presentation.main.MainActivity
 
 class LyricsWidget : GlanceAppWidget() {
 

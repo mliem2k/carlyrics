@@ -1,4 +1,4 @@
-package com.spotifylyrics.data.remote.api
+package com.mliem.carlyrics.data.remote.api
 
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
@@ -74,7 +74,7 @@ class LrclibApiServiceTest {
         )
 
         val result = service.fetchLyrics(
-            com.spotifylyrics.domain.model.TrackInfo(track = "Bohemian Rhapsody", artist = "Queen")
+            com.mliem.carlyrics.domain.model.TrackInfo(track = "Bohemian Rhapsody", artist = "Queen")
         )
 
         assertNotNull(result)
@@ -106,7 +106,7 @@ class LrclibApiServiceTest {
         )
 
         val result = service.fetchLyrics(
-            com.spotifylyrics.domain.model.TrackInfo(track = "Stairway to Heaven", artist = "Led Zeppelin")
+            com.mliem.carlyrics.domain.model.TrackInfo(track = "Stairway to Heaven", artist = "Led Zeppelin")
         )
 
         assertNotNull(result)
@@ -132,7 +132,7 @@ class LrclibApiServiceTest {
         )
 
         val result = service.fetchLyrics(
-            com.spotifylyrics.domain.model.TrackInfo(track = "Moonlight Sonata", artist = "Beethoven")
+            com.mliem.carlyrics.domain.model.TrackInfo(track = "Moonlight Sonata", artist = "Beethoven")
         )
 
         assertNull(result)
@@ -143,7 +143,7 @@ class LrclibApiServiceTest {
         server.enqueue(MockResponse().setResponseCode(200).setBody("[]"))
 
         val result = service.fetchLyrics(
-            com.spotifylyrics.domain.model.TrackInfo(track = "Unknown Track", artist = "Unknown Artist")
+            com.mliem.carlyrics.domain.model.TrackInfo(track = "Unknown Track", artist = "Unknown Artist")
         )
 
         assertNull(result)
@@ -154,7 +154,7 @@ class LrclibApiServiceTest {
         server.enqueue(MockResponse().setResponseCode(404))
 
         val result = service.fetchLyrics(
-            com.spotifylyrics.domain.model.TrackInfo(track = "Any Track", artist = "Any Artist")
+            com.mliem.carlyrics.domain.model.TrackInfo(track = "Any Track", artist = "Any Artist")
         )
 
         assertNull(result)
@@ -188,7 +188,7 @@ class LrclibApiServiceTest {
         )
 
         val result = service.fetchLyrics(
-            com.spotifylyrics.domain.model.TrackInfo(track = "Hello", artist = "Adele")
+            com.mliem.carlyrics.domain.model.TrackInfo(track = "Hello", artist = "Adele")
         )
 
         assertNotNull(result)

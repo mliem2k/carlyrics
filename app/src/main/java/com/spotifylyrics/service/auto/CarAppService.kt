@@ -1,9 +1,9 @@
-package com.spotifylyrics.service.auto
+package com.mliem.carlyrics.service.auto
 
 import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
-import com.spotifylyrics.service.auto.session.CarLyricsSession
+import com.mliem.carlyrics.service.auto.session.CarLyricsSession
 
 /**
  * Car App Service for Android Auto integration

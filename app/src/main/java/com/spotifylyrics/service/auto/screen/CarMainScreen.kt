@@ -1,4 +1,4 @@
-package com.spotifylyrics.service.auto.screen
+package com.mliem.carlyrics.service.auto.screen
 
 import androidx.car.app.CarContext
 import androidx.car.app.Screen

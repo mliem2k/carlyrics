@@ -1,4 +1,4 @@
-package com.spotifylyrics.service.foreground
+package com.mliem.carlyrics.service.foreground
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -10,9 +10,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.spotifylyrics.presentation.main.MainActivity
-import com.spotifylyrics.service.LyricsOrchestrator
-import com.spotifylyrics.service.media.MediaSessionManager
+import com.mliem.carlyrics.presentation.main.MainActivity
+import com.mliem.carlyrics.service.LyricsOrchestrator
+import com.mliem.carlyrics.service.media.MediaSessionManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

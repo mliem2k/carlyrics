@@ -1,4 +1,4 @@
-package com.spotifylyrics.service.auto.screen
+package com.mliem.carlyrics.service.auto.screen
 
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
@@ -8,8 +8,8 @@ import androidx.car.app.model.ItemList
 import androidx.car.app.model.ListTemplate
 import androidx.car.app.model.Row
 import androidx.car.app.model.Template
-import com.spotifylyrics.domain.model.Lyrics
-import com.spotifylyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.model.Lyrics
+import com.mliem.carlyrics.domain.model.TrackInfo
 
 class CarLyricsScreen(
     carContext: CarContext,

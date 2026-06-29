@@ -1,6 +1,6 @@
-package com.spotifylyrics.domain.repository
+package com.mliem.carlyrics.domain.repository
 
-import com.spotifylyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.model.TrackInfo
 import kotlinx.coroutines.flow.Flow
 
 /**

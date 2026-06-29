@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.widget
+package com.mliem.carlyrics.presentation.widget
 
 data class LyricsWidgetState(
     val trackTitle: String = "",

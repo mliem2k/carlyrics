@@ -1,4 +1,4 @@
-package com.spotifylyrics.presentation.main
+package com.mliem.carlyrics.presentation.main
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,9 +10,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import com.spotifylyrics.presentation.navigation.NavGraph
-import com.spotifylyrics.presentation.theme.SpotifyLyricsTheme
-import com.spotifylyrics.service.foreground.LyricsForegroundService
+import com.mliem.carlyrics.presentation.navigation.NavGraph
+import com.mliem.carlyrics.presentation.theme.CarLyricsTheme
+import com.mliem.carlyrics.service.foreground.LyricsForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         LyricsForegroundService.startService(this)
         setContent {
-            SpotifyLyricsTheme {
+            CarLyricsTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

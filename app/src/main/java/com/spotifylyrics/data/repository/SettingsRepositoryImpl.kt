@@ -1,7 +1,7 @@
-package com.spotifylyrics.data.repository
+package com.mliem.carlyrics.data.repository
 
-import com.spotifylyrics.data.local.preferences.SettingsPreferences
-import com.spotifylyrics.domain.repository.SettingsRepository
+import com.mliem.carlyrics.data.local.preferences.SettingsPreferences
+import com.mliem.carlyrics.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

@@ -1,8 +1,8 @@
-package com.spotifylyrics.data.remote.api
+package com.mliem.carlyrics.data.remote.api
 
-import com.spotifylyrics.domain.model.Lyrics
-import com.spotifylyrics.domain.model.TrackInfo
-import com.spotifylyrics.domain.util.LrcParser
+import com.mliem.carlyrics.domain.model.Lyrics
+import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.util.LrcParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient

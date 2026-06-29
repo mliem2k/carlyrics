@@ -1,11 +1,11 @@
-package com.spotifylyrics.data.local.database
+package com.mliem.carlyrics.data.local.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.spotifylyrics.data.local.database.dao.LyricsDao
-import com.spotifylyrics.data.local.database.dao.TrackInfoDao
-import com.spotifylyrics.data.local.database.entity.CachedLyricsEntity
-import com.spotifylyrics.data.local.database.entity.TrackInfoEntity
+import com.mliem.carlyrics.data.local.database.dao.LyricsDao
+import com.mliem.carlyrics.data.local.database.dao.TrackInfoDao
+import com.mliem.carlyrics.data.local.database.entity.CachedLyricsEntity
+import com.mliem.carlyrics.data.local.database.entity.TrackInfoEntity
 
 /**
  * Room database for Spotify Lyrics app

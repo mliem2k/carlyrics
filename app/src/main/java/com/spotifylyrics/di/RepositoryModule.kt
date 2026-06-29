@@ -1,11 +1,11 @@
-package com.spotifylyrics.di
+package com.mliem.carlyrics.di
 
-import com.spotifylyrics.data.repository.LyricsRepositoryImpl
-import com.spotifylyrics.data.repository.SettingsRepositoryImpl
-import com.spotifylyrics.data.repository.TrackRepositoryImpl
-import com.spotifylyrics.domain.repository.LyricsRepository
-import com.spotifylyrics.domain.repository.SettingsRepository
-import com.spotifylyrics.domain.repository.TrackRepository
+import com.mliem.carlyrics.data.repository.LyricsRepositoryImpl
+import com.mliem.carlyrics.data.repository.SettingsRepositoryImpl
+import com.mliem.carlyrics.data.repository.TrackRepositoryImpl
+import com.mliem.carlyrics.domain.repository.LyricsRepository
+import com.mliem.carlyrics.domain.repository.SettingsRepository
+import com.mliem.carlyrics.domain.repository.TrackRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

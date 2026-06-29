@@ -1,9 +1,9 @@
-package com.spotifylyrics.data.local.database.entity
+package com.mliem.carlyrics.data.local.database.entity
 
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.spotifylyrics.domain.model.Lyrics
+import com.mliem.carlyrics.domain.model.Lyrics
 
 /**
  * Room entity for cached lyrics
@@ -64,7 +64,7 @@ fun CachedLyricsEntity.toDomainModel(): Lyrics {
  */
 private val SYNCED_TIME_REGEX = Regex("\\[(\\d+):(\\d+)\\.(\\d+)\\]")
 
-private fun parseSyncedLyrics(syncedLyricsJson: String): List<com.spotifylyrics.domain.model.SyncedLyricLine> {
+private fun parseSyncedLyrics(syncedLyricsJson: String): List<com.mliem.carlyrics.domain.model.SyncedLyricLine> {
     return syncedLyricsJson.lines()
         .mapNotNull { line ->
             val match = SYNCED_TIME_REGEX.find(line)
@@ -74,7 +74,7 @@ private fun parseSyncedLyrics(syncedLyricsJson: String): List<com.spotifylyrics.
                 val milliseconds = match.groupValues[3].toLong()
                 val startTime = minutes * 60000 + seconds * 1000 + milliseconds
                 val text = line.substring(match.range.last + 1)
-                com.spotifylyrics.domain.model.SyncedLyricLine(startTime, text)
+                com.mliem.carlyrics.domain.model.SyncedLyricLine(startTime, text)
             } else {
                 null
             }

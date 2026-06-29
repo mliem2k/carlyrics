@@ -1,8 +1,8 @@
-package com.spotifylyrics.data.local.database.entity
+package com.mliem.carlyrics.data.local.database.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.spotifylyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.domain.model.TrackInfo
 
 /**
  * Room entity for track playback history
