@@ -5,15 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.spotifylyrics.domain.usecase.ClearCacheUseCase
 import com.spotifylyrics.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel for SettingsScreen
- */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
@@ -23,30 +23,28 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
+    private val _messages = Channel<String>(Channel.CONFLATED)
+    val messages = _messages.receiveAsFlow()
+
     init {
         loadSettings()
     }
 
     private fun loadSettings() {
         viewModelScope.launch {
-            settingsRepository.isLrclibEnabled().collect { enabled ->
-                _uiState.value = _uiState.value.copy(lrclibEnabled = enabled)
-            }
-        }
-        viewModelScope.launch {
-            settingsRepository.isGeniusEnabled().collect { enabled ->
-                _uiState.value = _uiState.value.copy(geniusEnabled = enabled)
-            }
-        }
-        viewModelScope.launch {
-            settingsRepository.isMusixmatchEnabled().collect { enabled ->
-                _uiState.value = _uiState.value.copy(musixmatchEnabled = enabled)
-            }
-        }
-        viewModelScope.launch {
-            settingsRepository.isAutoFetchEnabled().collect { enabled ->
-                _uiState.value = _uiState.value.copy(autoFetchEnabled = enabled)
-            }
+            combine(
+                settingsRepository.isLrclibEnabled(),
+                settingsRepository.isGeniusEnabled(),
+                settingsRepository.isMusixmatchEnabled(),
+                settingsRepository.isAutoFetchEnabled()
+            ) { lrclib, genius, musixmatch, autoFetch ->
+                SettingsUiState(
+                    lrclibEnabled = lrclib,
+                    geniusEnabled = genius,
+                    musixmatchEnabled = musixmatch,
+                    autoFetchEnabled = autoFetch
+                )
+            }.collect { _uiState.value = it }
         }
     }
 
@@ -55,42 +53,28 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun toggleGenius(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setGeniusEnabled(enabled)
-        }
+        viewModelScope.launch { settingsRepository.setGeniusEnabled(enabled) }
     }
 
     fun toggleMusixmatch(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setMusixmatchEnabled(enabled)
-        }
+        viewModelScope.launch { settingsRepository.setMusixmatchEnabled(enabled) }
     }
 
     fun toggleAutoFetch(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setAutoFetch(enabled)
-        }
+        viewModelScope.launch { settingsRepository.setAutoFetch(enabled) }
     }
 
     fun clearCache() {
         viewModelScope.launch {
             clearCacheUseCase()
-            _uiState.value = _uiState.value.copy(cacheCleared = true)
+            _messages.send("Cache cleared")
         }
-    }
-
-    fun cacheClearedHandled() {
-        _uiState.value = _uiState.value.copy(cacheCleared = false)
     }
 }
 
-/**
- * UI state for SettingsScreen
- */
 data class SettingsUiState(
     val lrclibEnabled: Boolean = true,
     val geniusEnabled: Boolean = true,
     val musixmatchEnabled: Boolean = true,
-    val autoFetchEnabled: Boolean = true,
-    val cacheCleared: Boolean = false
+    val autoFetchEnabled: Boolean = true
 )

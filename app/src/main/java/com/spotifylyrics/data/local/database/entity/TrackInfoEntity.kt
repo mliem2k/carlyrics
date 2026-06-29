@@ -9,25 +9,25 @@ import com.spotifylyrics.domain.model.TrackInfo
  */
 @Entity(tableName = "track_history")
 data class TrackInfoEntity(
+    @PrimaryKey val id: String,
     val track: String,
     val artist: String,
     val album: String?,
     val playedAt: Long = System.currentTimeMillis(),
     val isPlaying: Boolean = false
-) {
-    @PrimaryKey
-    var id: String = "${track}_${artist}_$playedAt"
-}
+)
 
 /**
  * Extension function to convert domain model to entity
  */
 fun TrackInfo.toEntity(): TrackInfoEntity {
+    val playedAt = System.currentTimeMillis()
     return TrackInfoEntity(
+        id = "${track}_${artist}_$playedAt",
         track = track,
         artist = artist,
         album = album,
-        playedAt = System.currentTimeMillis(),
+        playedAt = playedAt,
         isPlaying = isPlaying
     )
 }

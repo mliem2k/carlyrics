@@ -73,6 +73,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override fun getAllSettings(): Flow<Map<String, Boolean>> {
         return preferences.getAll().map { prefs ->
             mapOf(
+                KEY_LRCLIB_ENABLED to (prefs[KEY_LRCLIB_ENABLED] as? Boolean ?: true),
                 KEY_GENIUS_ENABLED to (prefs[KEY_GENIUS_ENABLED] as? Boolean ?: true),
                 KEY_MUSIXMATCH_ENABLED to (prefs[KEY_MUSIXMATCH_ENABLED] as? Boolean ?: true),
                 KEY_AUTO_FETCH to (prefs[KEY_AUTO_FETCH] as? Boolean ?: true)
