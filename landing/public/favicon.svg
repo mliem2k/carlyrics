@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <!-- Green background -->
+  <rect width="108" height="108" fill="#1DB954"/>
+
+  <!-- C shape (outer arc minus inner arc, opens right at ±50°) -->
+  <path fill="#0D0D14"
+    d="M68.14,27.15 A22,22 0 1,0 68.14,60.85 L62.36,53.96 A13,13 0 1,1 62.36,34.04 Z"/>
+
+  <!-- Lyric line 1 -->
+  <rect x="29" y="67" width="50" height="8" rx="4" fill="#0D0D14"/>
+
+  <!-- Lyric line 2 (shorter) -->
+  <rect x="29" y="80" width="36" height="8" rx="4" fill="#0D0D14"/>
+</svg>
