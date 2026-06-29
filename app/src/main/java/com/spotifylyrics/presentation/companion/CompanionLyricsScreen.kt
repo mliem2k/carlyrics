@@ -179,7 +179,7 @@ private fun CurrentTrackHeader(
     ) {
         track?.let {
             Text(
-                text = it.title,
+                text = it.track,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1
             )
