@@ -69,4 +69,4 @@ Run `./nightly_release.sh` to build a signed release APK and publish it to GitHu
 
 ## License
 
-MIT. For personal use. Respect copyright and artist rights.
+[MIT](LICENSE). Copyright 2025 Michael Liem. For personal use. Respect copyright and artist rights.
