@@ -4,9 +4,9 @@ set -euo pipefail
 REPO="mliem2k/carlyrics"
 
 export SIGNING_KEYSTORE_PATH="$(pwd)/spotify_lyrics_key.jks"
-export SIGNING_STORE_PASSWORD="spotify_lyrics_2024"
-export SIGNING_KEY_ALIAS="spotify_lyrics"
-export SIGNING_KEY_PASSWORD="spotify_lyrics_2024"
+export SIGNING_STORE_PASSWORD="spotifylyrics"
+export SIGNING_KEY_ALIAS="spotify-lyrics"
+export SIGNING_KEY_PASSWORD="spotifylyrics"
 
 DATE=$(date -u +%Y%m%d)
 TAG="nightly_${DATE}"
