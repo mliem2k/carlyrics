@@ -14,8 +14,9 @@ android {
         applicationId "com.mliem.carlyrics"
         minSdk 30  // Android 11 minimum for Android Auto
         targetSdk 36
-        versionCode (project.findProperty("versionCode") as String)?.toInteger() ?: 2
-        versionName project.findProperty("versionName") ?: "2.0.0"
+        def vcStr = project.findProperty("versionCode")?.toString()
+        versionCode vcStr ? Integer.parseInt(vcStr) : 2
+        versionName project.findProperty("versionName")?.toString() ?: "2.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

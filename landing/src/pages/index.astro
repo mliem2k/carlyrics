@@ -298,6 +298,8 @@ const features = [
       nav { padding: 0.75rem 1rem; }
       .nav-links { gap: 1rem; }
     }
+
+    button.btn { border: none; font: inherit; }
   </style>
 </head>
 <body>
@@ -320,9 +322,9 @@ const features = [
       home screen widget, and notification shade. All at once.
     </p>
     <div class="hero-actions">
-      <a href={RELEASES_URL} class="btn btn-primary">
+      <button type="button" id="dl-hero" class="btn btn-primary">
         Download APK
-      </a>
+      </button>
       <a href={`https://github.com/${GITHUB_REPO}`} class="btn btn-secondary" target="_blank" rel="noopener">
         View on GitHub
       </a>
@@ -374,9 +376,9 @@ const features = [
       Download the latest nightly build. Free, no ads, no account needed.
       Requires Android 11+ and notification access.
     </p>
-    <a href={RELEASES_URL} class="btn btn-primary">
+    <button type="button" id="dl-cta" class="btn btn-primary">
       Download latest APK
-    </a>
+    </button>
   </section>
 
   <footer>
@@ -388,5 +390,31 @@ const features = [
     </p>
   </footer>
 
+  <script>
+    function setupDownload(id) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        const orig = btn.textContent;
+        btn.setAttribute('disabled', '');
+        btn.textContent = 'Fetching...';
+        try {
+          const res = await fetch('https://api.github.com/repos/mliem2k/carlyrics/releases');
+          const releases = await res.json();
+          const nightly = releases.find(r => r.prerelease);
+          const apk = nightly?.assets?.find(a => a.name.endsWith('.apk'));
+          if (!apk) throw new Error('APK not found');
+          window.location.href = apk.browser_download_url;
+          btn.textContent = orig;
+        } catch {
+          btn.textContent = 'Download failed';
+        } finally {
+          btn.removeAttribute('disabled');
+        }
+      });
+    }
+    setupDownload('dl-hero');
+    setupDownload('dl-cta');
+  </script>
 </body>
 </html>
