@@ -1,7 +1,6 @@
 package com.mliem.carlyrics.service.notification
 
 import android.app.Notification
-import android.content.Intent
 import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
@@ -50,14 +49,6 @@ class MusicNotificationListener : NotificationListenerService() {
             "com.deezer.android.app"
         )
 
-        // Broadcast action for track changes
-        const val ACTION_TRACK_CHANGED = "com.mliem.carlyrics.TRACK_CHANGED"
-
-        // Intent extras
-        const val EXTRA_TRACK = "track"
-        const val EXTRA_ARTIST = "artist"
-        const val EXTRA_ALBUM = "album"
-        const val EXTRA_IS_PLAYING = "isPlaying"
     }
 
     @Inject
@@ -159,21 +150,7 @@ class MusicNotificationListener : NotificationListenerService() {
     }
 
     private fun notifyTrackChanged(trackInfo: TrackInfo) {
-        // Send via Flow
         trackEmitter.emitTrackInfo(trackInfo)
-
-        // Also send broadcast for compatibility
-        try {
-            val intent = Intent(ACTION_TRACK_CHANGED).apply {
-                putExtra(EXTRA_TRACK, trackInfo.track)
-                putExtra(EXTRA_ARTIST, trackInfo.artist)
-                putExtra(EXTRA_ALBUM, trackInfo.album ?: "")
-                putExtra(EXTRA_IS_PLAYING, trackInfo.isPlaying)
-            }
-            sendBroadcast(intent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to send broadcast: ${e.message}")
-        }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
