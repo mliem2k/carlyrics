@@ -37,10 +37,16 @@ const features = [
   <meta name="description" content="CarLyrics brings real time synced lyrics to Android Auto, your phone, and your home screen." />
   <title>CarLyrics: Synced Lyrics for Android Auto</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/fonts/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin />
   <style>
+    @font-face {
+      font-family: 'Inter';
+      font-style: normal;
+      font-weight: 400 800;
+      font-display: swap;
+      src: url('/fonts/inter-var-latin.woff2') format('woff2');
+    }
+
     :root {
       --green: #1DB954;
       --green-dim: #179443;
@@ -312,74 +318,76 @@ const features = [
     </div>
   </nav>
 
-  <section class="hero">
-    <div class="badge">
-      <span>*</span> Free and Open Source
-    </div>
-    <h1>Lyrics that follow<br /><span>your music, anywhere</span></h1>
-    <p class="hero-sub">
-      CarLyrics brings real time synced lyrics to Android Auto, your phone's lock screen,
-      home screen widget, and notification shade. All at once.
-    </p>
-    <div class="hero-actions">
-      <button type="button" id="dl-hero" class="btn btn-primary">
-        Download APK
-      </button>
-      <a href={`https://github.com/${GITHUB_REPO}`} class="btn btn-secondary" target="_blank" rel="noopener">
-        View on GitHub
-      </a>
-    </div>
-  </section>
-
-  <div class="demo">
-    <div class="demo-card">
-      <div class="demo-track">
-        <div class="demo-art"></div>
-        <div class="demo-info">
-          <div class="title">Bohemian Rhapsody</div>
-          <div class="artist">Queen</div>
-        </div>
+  <main>
+    <section class="hero">
+      <div class="badge">
+        <span>*</span> Free and Open Source
       </div>
-      <div class="lyric-line">Is this the real life?</div>
-      <div class="lyric-line lyric-active">Is this just fantasy?</div>
-      <div class="lyric-line">Caught in a landslide</div>
-      <div class="lyric-line">No escape from reality</div>
-    </div>
-  </div>
+      <h1>Lyrics that follow<br /><span>your music, anywhere</span></h1>
+      <p class="hero-sub">
+        CarLyrics brings real time synced lyrics to Android Auto, your phone's lock screen,
+        home screen widget, and notification shade. All at once.
+      </p>
+      <div class="hero-actions">
+        <button type="button" id="dl-hero" class="btn btn-primary">
+          Download APK
+        </button>
+        <a href={`https://github.com/${GITHUB_REPO}`} class="btn btn-secondary" target="_blank" rel="noopener">
+          View on GitHub
+        </a>
+      </div>
+    </section>
 
-  <section class="features" id="features">
-    <p class="section-label">Everything you need</p>
-    <h2 class="section-title">Lyrics everywhere you listen</h2>
-    <div class="grid">
-      {features.map(f => (
-        <div class="card">
-          <div class="card-title">{f.title}</div>
-          <p class="card-desc">{f.desc}</p>
+    <div class="demo">
+      <div class="demo-card">
+        <div class="demo-track">
+          <div class="demo-art"></div>
+          <div class="demo-info">
+            <div class="title">Bohemian Rhapsody</div>
+            <div class="artist">Queen</div>
+          </div>
         </div>
-      ))}
+        <div class="lyric-line">Is this the real life?</div>
+        <div class="lyric-line lyric-active">Is this just fantasy?</div>
+        <div class="lyric-line">Caught in a landslide</div>
+        <div class="lyric-line">No escape from reality</div>
+      </div>
     </div>
-  </section>
 
-  <section class="platforms">
-    <h2>Works across your whole Android setup</h2>
-    <div class="platform-row">
-      <div class="platform-item">Android Phone</div>
-      <div class="platform-item">Android Auto</div>
-      <div class="platform-item">Android Automotive</div>
-      <div class="platform-item">Home Screen Widget</div>
-    </div>
-  </section>
+    <section class="features" id="features">
+      <p class="section-label">Everything you need</p>
+      <h2 class="section-title">Lyrics everywhere you listen</h2>
+      <div class="grid">
+        {features.map(f => (
+          <div class="card">
+            <div class="card-title">{f.title}</div>
+            <p class="card-desc">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
 
-  <section class="cta">
-    <h2>Ready to sync your lyrics?</h2>
-    <p>
-      Download the latest nightly build. Free, no ads, no account needed.
-      Requires Android 11+ and notification access.
-    </p>
-    <button type="button" id="dl-cta" class="btn btn-primary">
-      Download latest APK
-    </button>
-  </section>
+    <section class="platforms">
+      <h2>Works across your whole Android setup</h2>
+      <div class="platform-row">
+        <div class="platform-item">Android Phone</div>
+        <div class="platform-item">Android Auto</div>
+        <div class="platform-item">Android Automotive</div>
+        <div class="platform-item">Home Screen Widget</div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <h2>Ready to sync your lyrics?</h2>
+      <p>
+        Download the latest nightly build. Free, no ads, no account needed.
+        Requires Android 11+ and notification access.
+      </p>
+      <button type="button" id="dl-cta" class="btn btn-primary">
+        Download latest APK
+      </button>
+    </section>
+  </main>
 
   <footer>
     <p>
