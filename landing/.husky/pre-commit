@@ -1,1 +1,1 @@
-bun run typecheck
+cd landing && bun run typecheck
