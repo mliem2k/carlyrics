@@ -30,11 +30,16 @@ android {
 
     signingConfigs {
         release {
-            def keystoreFile = System.getenv("SIGNING_KEYSTORE_PATH") ?: rootProject.file("spotify_lyrics_key.jks").absolutePath
-            storeFile file(keystoreFile)
-            storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: "spotifylyrics"
-            keyAlias System.getenv("SIGNING_KEY_ALIAS") ?: "spotify-lyrics"
-            keyPassword System.getenv("SIGNING_KEY_PASSWORD") ?: "spotifylyrics"
+            // No hardcoded fallback on purpose: assembleRelease fails loudly with a
+            // clear "keystore not set" error if these are missing, instead of silently
+            // signing with a known password. assembleDebug never evaluates this block.
+            def keystoreFile = System.getenv("SIGNING_KEYSTORE_PATH")
+            if (keystoreFile) {
+                storeFile file(keystoreFile)
+                storePassword System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+            }
         }
     }
 

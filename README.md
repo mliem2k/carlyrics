@@ -46,7 +46,7 @@ Install on a connected device:
 
 ## Nightly Release
 
-Run `./nightly_release.sh` to build a signed release APK and publish it to GitHub Releases. Requires the keystore file and `gh` CLI authenticated.
+Run `./nightly_release.sh` to build a signed release APK and publish it to GitHub Releases. Requires `gh` CLI authenticated and these exported: `SIGNING_KEYSTORE_PATH`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`.
 
 ## How It Works
 
