@@ -10,8 +10,10 @@ import com.mliem.carlyrics.data.remote.api.MusixmatchApiService
 import com.mliem.carlyrics.domain.model.Lyrics
 import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.domain.repository.LyricsRepository
+import com.mliem.carlyrics.domain.repository.SettingsRepository
 import com.mliem.carlyrics.domain.util.LrcParser
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -24,7 +26,7 @@ class LyricsRepositoryImpl @Inject constructor(
     private val geniusApiService: GeniusApiService,
     private val musixmatchApiService: MusixmatchApiService,
     private val lyricsOvhApiService: LyricsOvhApiService,
-    private val settingsPreferences: com.mliem.carlyrics.data.local.preferences.SettingsPreferences
+    private val settingsRepository: SettingsRepository
 ) : LyricsRepository {
 
     companion object {
@@ -42,18 +44,28 @@ class LyricsRepositoryImpl @Inject constructor(
             return Result.success(cached.toDomainModel())
         }
 
-        // 1. Try LRCLIB first — only source providing synced (timestamped) lyrics
-        lrclibApiService.fetchLyrics(trackInfo)?.let { lyrics ->
-            cacheLyrics(lyrics, SOURCE_LRCLIB)
-            return Result.success(lyrics)
+        // 1. Try LRCLIB first, the only source providing synced (timestamped) lyrics
+        if (settingsRepository.isLrclibEnabled().first()) {
+            try {
+                lrclibApiService.fetchLyrics(trackInfo)?.let { lyrics ->
+                    cacheLyrics(lyrics, SOURCE_LRCLIB)
+                    return Result.success(lyrics)
+                }
+            } catch (_: Exception) {
+                // fall through to plain-lyrics sources below
+            }
         }
 
-        // 2. Fall back to plain-lyrics scraping sources
-        val plainSources = listOf(
-            SOURCE_GENIUS to suspend { geniusApiService.fetchLyrics(trackInfo) },
-            SOURCE_MUSIXMATCH to suspend { musixmatchApiService.fetchLyrics(trackInfo) },
-            SOURCE_LYRICS_OVH to suspend { lyricsOvhApiService.fetchLyrics(trackInfo) }
-        )
+        // 2. Fall back to plain-lyrics scraping sources, honoring per-source toggles
+        val plainSources = buildList {
+            if (settingsRepository.isGeniusEnabled().first()) {
+                add(SOURCE_GENIUS to suspend { geniusApiService.fetchLyrics(trackInfo) })
+            }
+            if (settingsRepository.isMusixmatchEnabled().first()) {
+                add(SOURCE_MUSIXMATCH to suspend { musixmatchApiService.fetchLyrics(trackInfo) })
+            }
+            add(SOURCE_LYRICS_OVH to suspend { lyricsOvhApiService.fetchLyrics(trackInfo) })
+        }
 
         for ((source, fetch) in plainSources) {
             try {

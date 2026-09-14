@@ -26,7 +26,10 @@ cp "$APK_SRC" "$APK_OUT"
 echo "==> APK ready: ${APK_OUT} ($(du -h "$APK_OUT" | cut -f1))"
 
 echo "==> Publishing GitHub release ${TAG}"
-gh release delete "$TAG" --yes 2>/dev/null || true
+# --cleanup-tag also removes the underlying git tag, not just the release. A
+# same day rerun otherwise reuses the FIRST run's tag/commit for the release
+# gh creates below, so the published APK and the tagged source disagree.
+gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
 gh release create "$TAG" "$APK_OUT" \
   --repo "$REPO" \
   --title "CarLyrics nightly ${DATE}" \

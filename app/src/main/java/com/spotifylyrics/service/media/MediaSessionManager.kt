@@ -6,6 +6,7 @@ import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.service.notification.TrackInfoEmitter
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,33 +37,32 @@ class MediaSessionManager @Inject constructor(
     private var playbackStartWallMs = 0L
     private var playbackStartPositionMs = 0L
 
-    init {
-        scope.launch {
-            trackInfoEmitter.trackInfoFlow.collect { trackInfo ->
-                val wasPlaying = _currentTrackFlow.value?.isPlaying == true
-                val isNewTrack = _currentTrackFlow.value?.getKey() != trackInfo.getKey()
+    private var trackCollectorJob: Job? = null
+    private var tickerJob: Job? = null
+    private var activeConsumers = 0
 
-                _currentTrackFlow.value = trackInfo
-                _isPlaying.value = trackInfo.isPlaying
+    private fun observeTrackInfo(): Job = scope.launch {
+        trackInfoEmitter.trackInfoFlow.collect { trackInfo ->
+            val wasPlaying = _currentTrackFlow.value?.isPlaying == true
+            val isNewTrack = _currentTrackFlow.value?.getKey() != trackInfo.getKey()
 
-                if (isNewTrack && trackInfo.isPlaying) {
-                    resetPlaybackPosition()
-                } else if (!wasPlaying && trackInfo.isPlaying) {
-                    resumePositionTracking()
-                }
+            _currentTrackFlow.value = trackInfo
+            _isPlaying.value = trackInfo.isPlaying
+
+            if (isNewTrack && trackInfo.isPlaying) {
+                resetPlaybackPosition()
+            } else if (!wasPlaying && trackInfo.isPlaying) {
+                resumePositionTracking()
             }
         }
-        startPositionTicker()
     }
 
-    private fun startPositionTicker() {
-        scope.launch {
-            while (true) {
-                delay(500)
-                if (_isPlaying.value) {
-                    val elapsed = System.currentTimeMillis() - playbackStartWallMs
-                    _playbackPositionFlow.value = playbackStartPositionMs + elapsed
-                }
+    private fun startPositionTicker(): Job = scope.launch {
+        while (true) {
+            delay(500)
+            if (_isPlaying.value) {
+                val elapsed = System.currentTimeMillis() - playbackStartWallMs
+                _playbackPositionFlow.value = playbackStartPositionMs + elapsed
             }
         }
     }
@@ -78,9 +78,32 @@ class MediaSessionManager @Inject constructor(
         playbackStartPositionMs = _playbackPositionFlow.value
     }
 
-    fun startMonitoring() {}
+    /**
+     * Starts collecting track/position updates. Reference counted: both the
+     * phone foreground service and an Android Auto session call this
+     * independently, and monitoring must keep running as long as at least
+     * one of them is active.
+     */
+    fun startMonitoring() {
+        activeConsumers++
+        if (trackCollectorJob != null) return
+        trackCollectorJob = observeTrackInfo()
+        tickerJob = startPositionTicker()
+    }
 
-    fun stopMonitoring() {}
+    /**
+     * Releases one consumer's need for monitoring. Only actually stops the
+     * collectors once every consumer that called startMonitoring() has
+     * called this too, since this is the process-wide singleton instance.
+     */
+    fun stopMonitoring() {
+        activeConsumers = (activeConsumers - 1).coerceAtLeast(0)
+        if (activeConsumers > 0) return
+        trackCollectorJob?.cancel()
+        trackCollectorJob = null
+        tickerJob?.cancel()
+        tickerJob = null
+    }
 
     fun updateTrack(track: String, artist: String, album: String?, isPlaying: Boolean) {
         _currentTrackFlow.value = TrackInfo(

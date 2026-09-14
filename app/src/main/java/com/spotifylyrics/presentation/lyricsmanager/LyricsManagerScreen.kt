@@ -60,6 +60,10 @@ import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 private val DarkSurface = Color(0xFF282828)
 private val DarkBg = Color(0xFF121212)
 
+// Generous cap for a plain-text LRC file; guards against OutOfMemoryError if
+// the user picks a large non-text file through the "*/*" picker.
+private const val MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricsManagerScreen(
@@ -77,7 +81,19 @@ fun LyricsManagerScreen(
     ) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         runCatching {
-            context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: ""
+            context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
+                val buffer = CharArray(8192)
+                val text = StringBuilder()
+                var totalRead = 0
+                while (true) {
+                    val n = reader.read(buffer)
+                    if (n < 0) break
+                    totalRead += n
+                    check(totalRead <= MAX_IMPORT_FILE_BYTES) { "File is too large to import" }
+                    text.append(buffer, 0, n)
+                }
+                text.toString()
+            } ?: ""
         }.onSuccess { content ->
             if (content.isNotBlank()) {
                 pendingLrcContent = content

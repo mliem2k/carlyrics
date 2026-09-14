@@ -16,11 +16,22 @@ object LrcParser {
         val matches = TIME_TAG_REGEX.findAll(line).toList()
         if (matches.isEmpty()) return emptyList()
 
-        val timeTags = matches.map { match ->
-            val minutes = match.groupValues[1].toLong()
-            val seconds = match.groupValues[2].toLong()
-            val millis = match.groupValues[3].takeIf { it.isNotEmpty() }?.toLong()?.times(10) ?: 0L
-            minutes * 60_000 + seconds * 1_000 + millis
+        val timeTags = try {
+            matches.map { match ->
+                val minutes = match.groupValues[1].toLong()
+                val seconds = match.groupValues[2].toLong()
+                // Pad/truncate the fractional group to exactly 3 digits
+                // (milliseconds) instead of assuming it is always 2-digit
+                // centiseconds, so 1-digit tenths ([00:01.5]) and 3-digit
+                // milliseconds ([00:01.234]) both scale correctly.
+                val fracDigits = match.groupValues[3]
+                val millis = if (fracDigits.isEmpty()) 0L else fracDigits.padEnd(3, '0').take(3).toLong()
+                minutes * 60_000 + seconds * 1_000 + millis
+            }
+        } catch (_: NumberFormatException) {
+            // An unreasonably long digit run (malformed/adversarial input)
+            // overflows Long; skip this line rather than crash the parse.
+            return emptyList()
         }
 
         val lyricText = line.substring(matches.last().range.last + 1).trim()

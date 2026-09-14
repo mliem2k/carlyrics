@@ -15,6 +15,7 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
@@ -31,6 +32,7 @@ class CarLyricsSession : Session() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var lyricsScreen: CarLyricsScreen? = null
+    private var liveDataJob: Job? = null
 
     override fun onCreateScreen(intent: Intent): Screen {
         val entryPoint = EntryPointAccessors
@@ -43,7 +45,22 @@ class CarLyricsSession : Session() {
 
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
-                observeLiveData(orchestrator, mediaManager, screen)
+                // Idempotent/reference counted: keeps the engine alive for
+                // Android Auto even if the phone app was never opened, and
+                // does not double count against a phone session already
+                // running it.
+                mediaManager.startMonitoring()
+                orchestrator.start()
+                liveDataJob = observeLiveData(orchestrator, mediaManager, screen)
+            }
+            override fun onStop(owner: LifecycleOwner) {
+                // Cancel only the previous onStart's collector job, not the
+                // whole session scope, so repeated screen dim/wake cycles
+                // don't accumulate one leaked collector per cycle.
+                liveDataJob?.cancel()
+                liveDataJob = null
+                mediaManager.stopMonitoring()
+                orchestrator.stop()
             }
             override fun onDestroy(owner: LifecycleOwner) {
                 scope.cancel()
@@ -58,17 +75,15 @@ class CarLyricsSession : Session() {
         orchestrator: LyricsOrchestrator,
         mediaManager: MediaSessionManager,
         screen: CarLyricsScreen
-    ) {
-        scope.launch {
-            combine(
-                orchestrator.currentLyrics,
-                mediaManager.currentTrackFlow,
-                mediaManager.playbackPositionFlow
-            ) { lyrics, track, positionMs ->
-                Triple(track, lyrics, positionMs)
-            }.collect { (track, lyrics, positionMs) ->
-                screen.update(track, lyrics, positionMs)
-            }
+    ): Job = scope.launch {
+        combine(
+            orchestrator.currentLyrics,
+            mediaManager.currentTrackFlow,
+            mediaManager.playbackPositionFlow
+        ) { lyrics, track, positionMs ->
+            Triple(track, lyrics, positionMs)
+        }.collect { (track, lyrics, positionMs) ->
+            screen.update(track, lyrics, positionMs)
         }
     }
 }
