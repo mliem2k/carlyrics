@@ -22,14 +22,9 @@ class LrclibApiServiceTest {
         server = MockWebServer()
         server.start()
 
-        // Point the service at the mock server by subclassing and overriding BASE_URL.
-        // Since BASE_URL is a companion const, we use a wrapper that replaces the host.
-        val client = OkHttpClient()
-        service = object : LrclibApiService(client) {
-            // Override not needed — we redirect via OkHttp interceptor below.
-        }
-
-        // Rebuild with a redirecting client so all requests go to MockWebServer.
+        // Point the service at the mock server: since BASE_URL is a companion
+        // const, redirect every request to MockWebServer via an interceptor
+        // instead of overriding it.
         val redirectingClient = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val original = chain.request()

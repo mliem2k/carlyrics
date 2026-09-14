@@ -61,6 +61,7 @@ class LyricsForegroundService : Service() {
         )
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, buildNotification("CarLyrics", "Listening for music…"))
+        mediaSessionManager.startMonitoring()
         lyricsOrchestrator.start()
         observeForNotification()
     }
@@ -68,6 +69,11 @@ class LyricsForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
 
     override fun onDestroy() {
+        // Actually stop the engine, not just this service's own notification
+        // collector, so closing the app stops background polling instead of
+        // only removing the notification while everything keeps running.
+        lyricsOrchestrator.stop()
+        mediaSessionManager.stopMonitoring()
         scope.cancel()
         super.onDestroy()
     }

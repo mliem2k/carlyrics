@@ -68,6 +68,14 @@ for variant in "${BUILD_VARIANTS[@]}"; do
                 -dname "CN=Spotify Lyrics, OU=Test, O=Test, L=Test, S=Test, C=US" \
                 2>/dev/null || print_warning "Could not create release keystore automatically"
         fi
+
+        # build.gradle's signingConfigs.release only reads these env vars,
+        # with no fallback, so a release build needs them set even when
+        # signing with this throwaway test keystore.
+        export SIGNING_KEYSTORE_PATH="$(pwd)/app/release.keystore"
+        export SIGNING_STORE_PASSWORD="release123"
+        export SIGNING_KEY_ALIAS="spotifylyrics"
+        export SIGNING_KEY_PASSWORD="release123"
     fi
 
     # Build the APK
