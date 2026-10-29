@@ -26,6 +26,8 @@ class CompanionLyricsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CompanionUiState())
     val uiState: StateFlow<CompanionUiState> = _uiState.asStateFlow()
     
+    val isPlaying: StateFlow<Boolean> = mediaSessionManager.isPlaying
+
     private val _currentLyricIndex = MutableStateFlow(0)
     val currentLyricIndex: StateFlow<Int> = _currentLyricIndex.asStateFlow()
     
@@ -94,6 +96,8 @@ class CompanionLyricsViewModel @Inject constructor(
                         error = null
                     )
                     _currentLyricIndex.value = 0
+                    // A paused track emits no new position, so place the line now.
+                    syncLyricsToPlayback(_playbackPositionMs.value)
                 }
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
