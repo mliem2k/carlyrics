@@ -3,6 +3,7 @@ package com.mliem.carlyrics.data.remote.api
 import com.mliem.carlyrics.domain.model.Lyrics
 import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.domain.util.LrcParser
+import com.mliem.carlyrics.domain.util.LyricsMatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -25,8 +26,11 @@ class LrclibApiService(private val okHttpClient: OkHttpClient) {
     }
 
     suspend fun fetchLyrics(trackInfo: TrackInfo): Lyrics? = withContext(Dispatchers.IO) {
-        searchBestMatch(trackInfo.artist, trackInfo.track)
-            ?.toLyrics(trackInfo)
+        // Full credit first, then the first artist, since Spotify joins multiple artists.
+        listOf(trackInfo.artist, LyricsMatcher.primaryArtist(trackInfo.artist)).distinct()
+            .firstNotNullOfOrNull { artist ->
+                searchBestMatch(artist, trackInfo.track)?.toLyrics(trackInfo)
+            }
     }
 
     private fun searchBestMatch(artist: String, track: String): JSONObject? {

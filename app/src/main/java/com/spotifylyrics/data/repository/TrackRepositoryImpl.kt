@@ -5,7 +5,7 @@ import com.mliem.carlyrics.data.local.database.entity.toDomainModel
 import com.mliem.carlyrics.data.local.database.entity.toEntity
 import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.domain.repository.TrackRepository
-import com.mliem.carlyrics.service.notification.TrackInfoEmitter
+import com.mliem.carlyrics.service.media.MediaSessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -15,11 +15,11 @@ import javax.inject.Inject
  */
 class TrackRepositoryImpl @Inject constructor(
     private val trackInfoDao: TrackInfoDao,
-    private val trackInfoEmitter: TrackInfoEmitter
+    private val mediaSessionManager: MediaSessionManager
 ) : TrackRepository {
 
     override fun getCurrentTrackInfo(): Flow<TrackInfo?> {
-        return trackInfoEmitter.trackInfoFlow
+        return mediaSessionManager.currentTrackFlow
     }
 
     override fun getRecentTracks(limit: Int): Flow<List<TrackInfo>> {

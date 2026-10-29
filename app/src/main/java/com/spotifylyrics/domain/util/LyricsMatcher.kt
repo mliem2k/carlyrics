@@ -53,6 +53,24 @@ object LyricsMatcher {
         return dp[len1][len2]
     }
 
+    // Streaming suffixes that name a re-release, not a different song.
+    private val titleSuffix = Regex(
+        "\\s+-\\s+(\\d{4}\\s+)?(remaster(ed)?|radio edit|mono|stereo|single version|album version|deluxe|bonus track|anniversary).*$",
+        RegexOption.IGNORE_CASE
+    )
+    private val titleBrackets = Regex(
+        "\\s*[(\\[]\\s*(feat\\.?|ft\\.?|with|remaster(ed)?|\\d{4} remaster)[^)\\]]*[)\\]]",
+        RegexOption.IGNORE_CASE
+    )
+
+    /** "Song - Remastered 2011" and "Song (feat. X)" become "Song". Keeps the title if nothing would be left. */
+    fun cleanTitle(title: String): String =
+        title.replace(titleSuffix, "").replace(titleBrackets, "").trim().ifEmpty { title }
+
+    /** First artist of a "A, B" or "A & B" credit; callers try the full credit first (e.g. "Tyler, The Creator"). */
+    fun primaryArtist(artist: String): String =
+        artist.split(", ", " & ", " feat. ", " ft. ", ";").first().trim().ifEmpty { artist }
+
     /**
      * Normalize a string for comparison (remove special chars, lowercase)
      */

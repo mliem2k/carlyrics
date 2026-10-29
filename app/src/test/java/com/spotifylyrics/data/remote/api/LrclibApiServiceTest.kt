@@ -1,5 +1,6 @@
 package com.mliem.carlyrics.data.remote.api
 
+import com.mliem.carlyrics.domain.model.TrackInfo
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
@@ -188,5 +189,30 @@ class LrclibApiServiceTest {
 
         assertNotNull(result)
         assertEquals("Studio version", result!!.plainLyrics)
+    }
+
+    @Test
+    fun `falls back to the first artist when the full credit finds nothing`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("[]"))
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """[{"trackName": "Sunflower", "artistName": "Post Malone", "instrumental": false,
+                    "plainLyrics": "Needless to say", "syncedLyrics": "[00:01.00] Needless to say"}]"""
+            )
+        )
+
+        val result = service.fetchLyrics(TrackInfo(track = "Sunflower", artist = "Post Malone, Swae Lee"))
+
+        assertNotNull(result)
+        assertEquals("Post Malone, Swae Lee", server.takeRequest().requestUrl!!.queryParameter("artist_name"))
+        assertEquals("Post Malone", server.takeRequest().requestUrl!!.queryParameter("artist_name"))
+    }
+
+    @Test
+    fun `makes a single request when the credit has one artist`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("[]"))
+
+        assertNull(service.fetchLyrics(TrackInfo(track = "Sunflower", artist = "Post Malone")))
+        assertEquals(1, server.requestCount)
     }
 }

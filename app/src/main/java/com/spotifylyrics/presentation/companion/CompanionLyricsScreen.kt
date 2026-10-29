@@ -62,6 +62,7 @@ fun CompanionLyricsScreen(
     val isNightMode by viewModel.isNightMode.collectAsState()
     val brightness by viewModel.brightness.collectAsState()
     val autoScrollEnabled by viewModel.autoScrollEnabled.collectAsState()
+    val isPlaying by viewModel.isPlaying.collectAsState()
     
     val lazyListState = rememberLazyListState()
     
@@ -151,6 +152,7 @@ fun CompanionLyricsScreen(
             
             // Playback Controls
             PlaybackControlsBar(
+                isPlaying = isPlaying,
                 onPlayPause = { viewModel.togglePlayPause() },
                 onSkipPrevious = { viewModel.skipPrevious() },
                 onSkipNext = { viewModel.skipNext() },
@@ -251,6 +253,7 @@ private fun LyricsDisplay(
  */
 @Composable
 private fun PlaybackControlsBar(
+    isPlaying: Boolean,
     onPlayPause: () -> Unit,
     onSkipPrevious: () -> Unit,
     onSkipNext: () -> Unit,
@@ -300,8 +303,8 @@ private fun PlaybackControlsBar(
                 .background(MaterialTheme.colorScheme.primary)
         ) {
             Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Play/Pause",
+                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play",
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(32.dp)
             )
