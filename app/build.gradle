@@ -6,6 +6,10 @@ plugins {
     id 'androidx.room'
 }
 
+kotlin {
+    jvmToolchain(21)
+}
+
 android {
     namespace 'com.mliem.carlyrics'
     compileSdk 37  // required by the current AndroidX releases; targetSdk stays 36
