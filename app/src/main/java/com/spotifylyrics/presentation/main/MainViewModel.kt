@@ -45,7 +45,8 @@ class MainViewModel @Inject constructor(
                 )
 
                 // Auto-fetch lyrics when track changes, unless the user disabled it
-                if (trackInfo != null && trackInfo.isPlaying && settingsRepository.isAutoFetchEnabled().first()) {
+                // Only on a new track: pause/resume re-emits the same track.
+                if (trackChanged && trackInfo != null && settingsRepository.isAutoFetchEnabled().first()) {
                     fetchLyrics(trackInfo)
                 }
             }

@@ -1,10 +1,12 @@
 package com.mliem.carlyrics.presentation.main
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -20,7 +22,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        LyricsForegroundService.startService(this)
+        // Android 13+ hides the status-bar lyrics until this is granted.
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            LyricsForegroundService.startService(this)
+        }.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent {
             CarLyricsTheme {
                 Surface(
@@ -33,12 +38,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (!isChangingConfigurations) {
-            LyricsForegroundService.stopService(this)
-        }
-    }
 }
 
 fun openNotificationSettings(context: android.content.Context) {

@@ -11,7 +11,7 @@ interface LyricsRepository {
     /**
      * Get lyrics for a track, first checking cache then fetching from API
      */
-    suspend fun getLyrics(trackInfo: TrackInfo): Result<Lyrics>
+    suspend fun getLyrics(requested: TrackInfo): Result<Lyrics>
 
     /**
      * Get cached lyrics for a track

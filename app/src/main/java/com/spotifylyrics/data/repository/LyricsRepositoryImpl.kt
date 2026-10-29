@@ -12,6 +12,7 @@ import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.domain.repository.LyricsRepository
 import com.mliem.carlyrics.domain.repository.SettingsRepository
 import com.mliem.carlyrics.domain.util.LrcParser
+import com.mliem.carlyrics.domain.util.LyricsMatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -37,9 +38,14 @@ class LyricsRepositoryImpl @Inject constructor(
         private const val SOURCE_USER = "user"
     }
 
-    override suspend fun getLyrics(trackInfo: TrackInfo): Result<Lyrics> {
+    override suspend fun getLyrics(requested: TrackInfo): Result<Lyrics> {
+        val trackInfo = requested.copy(track = LyricsMatcher.cleanTitle(requested.track))
+        // Cache under the names the player reports, so the next lookup for them hits.
+        suspend fun cache(lyrics: Lyrics, source: String) =
+            cacheLyrics(lyrics.copy(track = requested.track, artist = requested.artist), source)
+
         // Check cache first
-        val cached = lyricsDao.getLyricsByTrackAndArtistSync(trackInfo.track, trackInfo.artist)
+        val cached = lyricsDao.getLyricsByTrackAndArtistSync(requested.track, requested.artist)
         if (cached != null && cached.expiresAt > System.currentTimeMillis()) {
             return Result.success(cached.toDomainModel())
         }
@@ -48,7 +54,7 @@ class LyricsRepositoryImpl @Inject constructor(
         if (settingsRepository.isLrclibEnabled().first()) {
             try {
                 lrclibApiService.fetchLyrics(trackInfo)?.let { lyrics ->
-                    cacheLyrics(lyrics, SOURCE_LRCLIB)
+                    cache(lyrics, SOURCE_LRCLIB)
                     return Result.success(lyrics)
                 }
             } catch (_: Exception) {
@@ -70,7 +76,7 @@ class LyricsRepositoryImpl @Inject constructor(
         for ((source, fetch) in plainSources) {
             try {
                 fetch()?.let { lyrics ->
-                    cacheLyrics(lyrics, source)
+                    cache(lyrics, source)
                     return Result.success(lyrics)
                 }
             } catch (_: Exception) {

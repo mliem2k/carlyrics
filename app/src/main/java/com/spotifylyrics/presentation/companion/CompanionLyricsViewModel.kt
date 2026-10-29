@@ -26,6 +26,8 @@ class CompanionLyricsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CompanionUiState())
     val uiState: StateFlow<CompanionUiState> = _uiState.asStateFlow()
     
+    val isPlaying: StateFlow<Boolean> = mediaSessionManager.isPlaying
+
     private val _currentLyricIndex = MutableStateFlow(0)
     val currentLyricIndex: StateFlow<Int> = _currentLyricIndex.asStateFlow()
     
@@ -50,8 +52,14 @@ class CompanionLyricsViewModel @Inject constructor(
         viewModelScope.launch {
             mediaSessionManager.currentTrackFlow.collect { trackInfo ->
                 trackInfo?.let { track ->
+                    // Pause/resume re-emits the same track; only a new track needs lyrics.
+                    val isNewTrack = _uiState.value.currentTrack?.getKey() != track.getKey()
                     _uiState.value = _uiState.value.copy(currentTrack = track)
-                    fetchLyrics(track.artist, track.track)
+                    if (isNewTrack) {
+                        _uiState.value = _uiState.value.copy(lyrics = emptyList())
+                        _currentLyricIndex.value = 0
+                        fetchLyrics(track.artist, track.track)
+                    }
                 }
             }
         }
@@ -88,6 +96,8 @@ class CompanionLyricsViewModel @Inject constructor(
                         error = null
                     )
                     _currentLyricIndex.value = 0
+                    // A paused track emits no new position, so place the line now.
+                    syncLyricsToPlayback(_playbackPositionMs.value)
                 }
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(

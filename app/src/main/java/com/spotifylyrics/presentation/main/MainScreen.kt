@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.presentation.theme.SpotifyGreen
 import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
@@ -33,7 +35,11 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    val hasNotificationPermission = isNotificationListenerEnabled(context)
+    var hasNotificationPermission by remember { mutableStateOf(isNotificationListenerEnabled(context)) }
+    // The grant happens in system settings, so re-check on return.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        hasNotificationPermission = isNotificationListenerEnabled(context)
+    }
 
     Scaffold(
         topBar = {
