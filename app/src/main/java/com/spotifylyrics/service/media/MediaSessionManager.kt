@@ -151,7 +151,10 @@ class MediaSessionManager @Inject constructor(
         val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
         val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
             ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
-        if (controller == null || title.isNullOrBlank() || artist.isNullOrBlank()) {
+        val isAd = metadata?.getLong("android.media.metadata.ADVERTISEMENT") == 1L
+        if (controller == null || title.isNullOrBlank() || artist.isNullOrBlank() ||
+            isAd || looksLikeAdvertisement(title, artist)
+        ) {
             anchor = PositionAnchor()
             _currentTrackFlow.value = null
             _isPlaying.value = false
@@ -202,3 +205,8 @@ internal data class PositionAnchor(
         return base + ((nowMs - updatedAtMs).coerceAtLeast(0L) * speed).toLong()
     }
 }
+
+/** Spotify ad breaks come through as a normal session; some builds omit the ADVERTISEMENT flag. */
+internal fun looksLikeAdvertisement(title: String, artist: String): Boolean =
+    title.equals("Advertisement", ignoreCase = true) ||
+        (title.equals("Spotify", ignoreCase = true) && artist.equals("Advertisement", ignoreCase = true))

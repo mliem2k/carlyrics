@@ -35,3 +35,18 @@ class PositionAnchorTest {
         assertEquals(10_000, anchor.estimateAt(4_000))
     }
 }
+
+class AdvertisementTest {
+
+    @Test
+    fun detectsSpotifyAdBreaks() {
+        assertEquals(true, looksLikeAdvertisement("Advertisement", "Spotify"))
+        assertEquals(true, looksLikeAdvertisement("Spotify", "Advertisement"))
+    }
+
+    @Test
+    fun leavesRealSongsAlone() {
+        assertEquals(false, looksLikeAdvertisement("Blinding Lights", "The Weeknd"))
+        assertEquals(false, looksLikeAdvertisement("Spotify", "Some Band"))
+    }
+}
