@@ -1,7 +1,6 @@
 package com.mliem.carlyrics.presentation.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -50,7 +49,8 @@ private val SpotifyLightColorScheme = lightColorScheme(
 
 @Composable
 fun CarLyricsTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Every screen is designed on black; the light scheme stays for previews only.
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) SpotifyDarkColorScheme else SpotifyLightColorScheme

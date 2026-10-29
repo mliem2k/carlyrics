@@ -34,15 +34,6 @@ class CompanionLyricsViewModel @Inject constructor(
     private val _playbackPositionMs = MutableStateFlow(0L)
     val playbackPositionMs: StateFlow<Long> = _playbackPositionMs.asStateFlow()
     
-    private val _isNightMode = MutableStateFlow(false)
-    val isNightMode: StateFlow<Boolean> = _isNightMode.asStateFlow()
-    
-    private val _brightness = MutableStateFlow(1f)
-    val brightness: StateFlow<Float> = _brightness.asStateFlow()
-    
-    private val _autoScrollEnabled = MutableStateFlow(true)
-    val autoScrollEnabled: StateFlow<Boolean> = _autoScrollEnabled.asStateFlow()
-    
     init {
         setupMediaSessionListener()
         observePlaybackUpdates()
@@ -110,7 +101,8 @@ class CompanionLyricsViewModel @Inject constructor(
     
     private fun syncLyricsToPlayback(playbackTimeMs: Long) {
         val lyrics = _uiState.value.lyrics
-        if (lyrics.isEmpty()) return
+        // Plain lyrics carry no timestamps, so there is no line to follow.
+        if (lyrics.none { it.timeMs > 0 }) return
         
         var newIndex = -1
         for (i in lyrics.indices) {
@@ -128,18 +120,6 @@ class CompanionLyricsViewModel @Inject constructor(
         if (newIndex >= 0 && _currentLyricIndex.value != newIndex) {
             _currentLyricIndex.value = newIndex
         }
-    }
-    
-    fun toggleAutoScroll() {
-        _autoScrollEnabled.value = !_autoScrollEnabled.value
-    }
-    
-    fun toggleNightMode() {
-        _isNightMode.value = !_isNightMode.value
-    }
-    
-    fun setBrightness(level: Float) {
-        _brightness.value = level.coerceIn(0f, 1f)
     }
     
     fun togglePlayPause() {
