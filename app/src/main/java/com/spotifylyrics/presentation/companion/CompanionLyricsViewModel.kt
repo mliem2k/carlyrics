@@ -50,8 +50,14 @@ class CompanionLyricsViewModel @Inject constructor(
         viewModelScope.launch {
             mediaSessionManager.currentTrackFlow.collect { trackInfo ->
                 trackInfo?.let { track ->
+                    // Pause/resume re-emits the same track; only a new track needs lyrics.
+                    val isNewTrack = _uiState.value.currentTrack?.getKey() != track.getKey()
                     _uiState.value = _uiState.value.copy(currentTrack = track)
-                    fetchLyrics(track.artist, track.track)
+                    if (isNewTrack) {
+                        _uiState.value = _uiState.value.copy(lyrics = emptyList())
+                        _currentLyricIndex.value = 0
+                        fetchLyrics(track.artist, track.track)
+                    }
                 }
             }
         }

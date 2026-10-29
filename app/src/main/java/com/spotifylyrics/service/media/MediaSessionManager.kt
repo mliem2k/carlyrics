@@ -1,9 +1,17 @@
 package com.mliem.carlyrics.service.media
 
+import android.content.ComponentName
 import android.content.Context
+import android.media.MediaMetadata
+import android.media.session.MediaController
+import android.media.session.PlaybackState
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
 import com.mliem.carlyrics.di.ApplicationScope
 import com.mliem.carlyrics.domain.model.TrackInfo
-import com.mliem.carlyrics.service.notification.TrackInfoEmitter
+import com.mliem.carlyrics.service.notification.MusicNotificationListener
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -14,19 +22,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.media.session.MediaSessionManager as SystemMediaSessionManager
 
+/**
+ * Follows the active system media session (Spotify first) and exposes its track,
+ * play state and real playback position. Reading the session needs notification
+ * access, which the user already grants for [MusicNotificationListener].
+ */
 @Singleton
 class MediaSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val trackInfoEmitter: TrackInfoEmitter,
     @ApplicationScope private val scope: CoroutineScope
 ) {
 
     private val _currentTrackFlow = MutableStateFlow<TrackInfo?>(null)
     val currentTrackFlow: StateFlow<TrackInfo?> = _currentTrackFlow.asStateFlow()
-
-    // Legacy alias kept for compatibility
-    val currentTrack: StateFlow<TrackInfo?> = _currentTrackFlow
 
     private val _playbackPositionFlow = MutableStateFlow(0L)
     val playbackPositionFlow: StateFlow<Long> = _playbackPositionFlow.asStateFlow()
@@ -34,103 +44,161 @@ class MediaSessionManager @Inject constructor(
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
-    private var playbackStartWallMs = 0L
-    private var playbackStartPositionMs = 0L
+    private val systemManager = context.getSystemService(SystemMediaSessionManager::class.java)
+    private val listenerComponent = ComponentName(context, MusicNotificationListener::class.java)
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    private var trackCollectorJob: Job? = null
+    private val sessionsListener =
+        SystemMediaSessionManager.OnActiveSessionsChangedListener { bind(it) }
+
+    private val controllerCallback = object : MediaController.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadata?) = publish()
+        override fun onPlaybackStateChanged(state: PlaybackState?) = publish()
+        override fun onSessionDestroyed() = publish()
+    }
+
+    // Only touched from the main thread (callbacks) or after listening starts.
+    private var controllers: List<MediaController> = emptyList()
+    private var listening = false
+
+    @Volatile
+    private var anchor = PositionAnchor()
     private var tickerJob: Job? = null
     private var activeConsumers = 0
 
-    private fun observeTrackInfo(): Job = scope.launch {
-        trackInfoEmitter.trackInfoFlow.collect { trackInfo ->
-            val wasPlaying = _currentTrackFlow.value?.isPlaying == true
-            val isNewTrack = _currentTrackFlow.value?.getKey() != trackInfo.getKey()
-
-            _currentTrackFlow.value = trackInfo
-            _isPlaying.value = trackInfo.isPlaying
-
-            if (isNewTrack && trackInfo.isPlaying) {
-                resetPlaybackPosition()
-            } else if (!wasPlaying && trackInfo.isPlaying) {
-                resumePositionTracking()
-            }
-        }
-    }
-
-    private fun startPositionTicker(): Job = scope.launch {
-        while (true) {
-            delay(500)
-            if (_isPlaying.value) {
-                val elapsed = System.currentTimeMillis() - playbackStartWallMs
-                _playbackPositionFlow.value = playbackStartPositionMs + elapsed
-            }
-        }
-    }
-
-    private fun resetPlaybackPosition() {
-        playbackStartWallMs = System.currentTimeMillis()
-        playbackStartPositionMs = 0L
-        _playbackPositionFlow.value = 0L
-    }
-
-    private fun resumePositionTracking() {
-        playbackStartWallMs = System.currentTimeMillis()
-        playbackStartPositionMs = _playbackPositionFlow.value
-    }
-
     /**
-     * Starts collecting track/position updates. Reference counted: both the
-     * phone foreground service and an Android Auto session call this
-     * independently, and monitoring must keep running as long as at least
-     * one of them is active.
+     * Reference counted: the phone foreground service and an Android Auto
+     * session both call this, and monitoring must outlive either one alone.
      */
     fun startMonitoring() {
         activeConsumers++
-        if (trackCollectorJob != null) return
-        trackCollectorJob = observeTrackInfo()
-        tickerJob = startPositionTicker()
+        if (tickerJob != null) return
+        tickerJob = scope.launch {
+            var ticksSinceRetry = 0
+            while (true) {
+                delay(TICK_MS)
+                if (!listening) {
+                    // Notification access may be granted after startup, so keep retrying.
+                    if (ticksSinceRetry++ % RETRY_EVERY_TICKS == 0) mainHandler.post { tryListen() }
+                } else if (anchor.playing) {
+                    _playbackPositionFlow.value = anchor.estimateAt(SystemClock.elapsedRealtime())
+                }
+            }
+        }
     }
 
-    /**
-     * Releases one consumer's need for monitoring. Only actually stops the
-     * collectors once every consumer that called startMonitoring() has
-     * called this too, since this is the process-wide singleton instance.
-     */
     fun stopMonitoring() {
         activeConsumers = (activeConsumers - 1).coerceAtLeast(0)
         if (activeConsumers > 0) return
-        trackCollectorJob?.cancel()
-        trackCollectorJob = null
         tickerJob?.cancel()
         tickerJob = null
-    }
-
-    fun updateTrack(track: String, artist: String, album: String?, isPlaying: Boolean) {
-        _currentTrackFlow.value = TrackInfo(
-            track = track,
-            artist = artist,
-            album = album,
-            isPlaying = isPlaying
-        )
-        _isPlaying.value = isPlaying
+        mainHandler.post {
+            if (listening) systemManager.removeOnActiveSessionsChangedListener(sessionsListener)
+            listening = false
+            bind(emptyList())
+        }
     }
 
     fun togglePlayPause() {
-        _isPlaying.value = !_isPlaying.value
-        if (_isPlaying.value) resumePositionTracking()
+        val controls = activeController()?.transportControls ?: return
+        if (_isPlaying.value) controls.pause() else controls.play()
     }
 
     fun skipToNext() {
-        resetPlaybackPosition()
+        activeController()?.transportControls?.skipToNext()
     }
 
     fun skipToPrevious() {
-        resetPlaybackPosition()
+        activeController()?.transportControls?.skipToPrevious()
     }
 
     fun seekTo(positionMs: Long) {
-        playbackStartWallMs = System.currentTimeMillis()
-        playbackStartPositionMs = positionMs
+        activeController()?.transportControls?.seekTo(positionMs) ?: return
+        // Show the jump now; the session's own state update confirms it right after.
+        anchor = anchor.copy(positionMs = positionMs, updatedAtMs = SystemClock.elapsedRealtime())
         _playbackPositionFlow.value = positionMs
+    }
+
+    private fun tryListen() {
+        if (listening) return
+        try {
+            systemManager.addOnActiveSessionsChangedListener(
+                sessionsListener, listenerComponent, mainHandler
+            )
+            listening = true
+            bind(systemManager.getActiveSessions(listenerComponent))
+        } catch (e: SecurityException) {
+            Log.d(TAG, "Notification access not granted yet")
+        }
+    }
+
+    private fun bind(newControllers: List<MediaController>?) {
+        controllers.forEach { it.unregisterCallback(controllerCallback) }
+        controllers = newControllers.orEmpty()
+        controllers.forEach { it.registerCallback(controllerCallback, mainHandler) }
+        publish()
+    }
+
+    /** Playing session wins, then Spotify, then whatever is first. */
+    private fun activeController(): MediaController? =
+        controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+            ?: controllers.firstOrNull { it.packageName in SPOTIFY_PACKAGES }
+            ?: controllers.firstOrNull()
+
+    private fun publish() {
+        val controller = activeController()
+        val metadata = controller?.metadata
+        val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
+        val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+            ?: metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
+        if (controller == null || title.isNullOrBlank() || artist.isNullOrBlank()) {
+            anchor = PositionAnchor()
+            _currentTrackFlow.value = null
+            _isPlaying.value = false
+            _playbackPositionFlow.value = 0L
+            return
+        }
+
+        val state = controller.playbackState
+        val playing = state?.state == PlaybackState.STATE_PLAYING
+        anchor = PositionAnchor(
+            positionMs = state?.position ?: 0L,
+            updatedAtMs = state?.lastPositionUpdateTime ?: SystemClock.elapsedRealtime(),
+            speed = state?.playbackSpeed ?: 1f,
+            playing = playing
+        )
+        _currentTrackFlow.value = TrackInfo(
+            track = title,
+            artist = artist,
+            album = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM),
+            isPlaying = playing
+        )
+        _isPlaying.value = playing
+        _playbackPositionFlow.value = anchor.estimateAt(SystemClock.elapsedRealtime())
+    }
+
+    companion object {
+        private const val TAG = "MediaSessionManager"
+        private const val TICK_MS = 250L
+        private const val RETRY_EVERY_TICKS = 8
+        private val SPOTIFY_PACKAGES = setOf("com.spotify.music", "com.spotify.lite")
+    }
+}
+
+/**
+ * Last position the session reported, and when ([SystemClock.elapsedRealtime] clock,
+ * as PlaybackState.getLastPositionUpdateTime uses). Position between reports is extrapolated.
+ */
+internal data class PositionAnchor(
+    val positionMs: Long = 0L,
+    val updatedAtMs: Long = 0L,
+    val speed: Float = 1f,
+    val playing: Boolean = false
+) {
+    fun estimateAt(nowMs: Long): Long {
+        // PlaybackState.PLAYBACK_POSITION_UNKNOWN is negative.
+        val base = positionMs.coerceAtLeast(0L)
+        if (!playing) return base
+        return base + ((nowMs - updatedAtMs).coerceAtLeast(0L) * speed).toLong()
     }
 }
