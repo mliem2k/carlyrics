@@ -10,6 +10,11 @@ kotlin {
     jvmToolchain(21)
 }
 
+// hiltJavaCompile ignores the Kotlin toolchain and falls back to the running JDK.
+tasks.withType(JavaCompile).configureEach {
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+}
+
 android {
     namespace 'com.mliem.carlyrics'
     compileSdk 37  // required by the current AndroidX releases; targetSdk stays 36
