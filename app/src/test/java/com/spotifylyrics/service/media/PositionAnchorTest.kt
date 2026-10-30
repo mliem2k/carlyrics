@@ -50,3 +50,18 @@ class AdvertisementTest {
         assertEquals(false, looksLikeAdvertisement("Spotify", "Some Band"))
     }
 }
+
+class MusicPackagesTest {
+
+    @Test
+    fun spotifyAndYouTubeMusicAreFollowed() {
+        assertEquals(true, "com.spotify.music" in MUSIC_PACKAGES)
+        assertEquals(true, "com.google.android.apps.youtube.music" in MUSIC_PACKAGES)
+    }
+
+    @Test
+    fun videoAppsAreIgnored() {
+        assertEquals(false, "com.google.android.youtube" in MUSIC_PACKAGES)
+        assertEquals(false, "com.netflix.mediaclient" in MUSIC_PACKAGES)
+    }
+}
