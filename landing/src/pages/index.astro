@@ -1,31 +1,24 @@
 ---
+import { Image } from 'astro:assets';
+import library from '../assets/screens/library.webp';
+import lyrics from '../assets/screens/lyrics.webp';
+import queue from '../assets/screens/queue.webp';
+import seek from '../assets/screens/seek.webp';
+import settings from '../assets/screens/settings.webp';
+import song from '../assets/screens/song.webp';
+
 const GITHUB_REPO = 'mliem2k/carlyrics';
-const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
-const features = [
-  {
-    title: 'Synced Lyrics',
-    desc: 'Timestamped karaoke style lyrics via LRCLIB. Lines highlight in real time as music plays.',
-  },
-  {
-    title: 'Android Auto',
-    desc: 'See lyrics on your car\'s head unit while driving, safely and hands-free.',
-  },
-  {
-    title: 'Companion View',
-    desc: 'Full screen scrolling lyrics on your phone with auto-scroll and night mode.',
-  },
-  {
-    title: 'Live Notification',
-    desc: 'Current lyric line updates live in the status bar notification. No screen unlock needed.',
-  },
-  {
-    title: 'Home Widget',
-    desc: 'Glance widget shows track, artist and current lyric right on your home screen.',
-  },
-  {
-    title: 'Lyrics Library',
-    desc: 'Browse cached lyrics, search, and import your own LRC files for offline use.',
-  },
+const REPO_URL = `https://github.com/${GITHUB_REPO}`;
+// Every build is published as a prerelease, and GitHub's /releases/latest skips prereleases
+// (it answers 404), so the fallback goes to the releases list instead.
+const RELEASES_URL = `${REPO_URL}/releases`;
+
+const alsoIn = [
+  'A live lyric line in the status bar, only while music plays.',
+  'A home screen widget with the current line.',
+  'The album cover paints the background, in its own colors.',
+  'Nothing runs in the background while no music is playing.',
+  'Works with Spotify, YouTube Music, Apple Music, Tidal and other music apps. Video apps are ignored.',
 ];
 ---
 
@@ -34,27 +27,41 @@ const features = [
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="CarLyrics brings real time synced lyrics to Android Auto, your phone, and your home screen." />
-  <title>CarLyrics: Synced Lyrics for Android Auto</title>
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a0f0c" />
+  <title>CarLyrics: synced lyrics for your Android music</title>
+  <meta name="description" content="Synced lyrics for whatever you play in Spotify and other Android music apps. In the app, in the status bar, on your home screen. Free, open source, no account." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="CarLyrics: synced lyrics for your Android music" />
+  <meta property="og:description" content="Lyrics that keep up with the song. Free, open source, no account." />
+  <meta property="og:image" content="/og.jpg" />
+  <meta property="og:image:alt" content="The CarLyrics app showing synced lyrics and an Up next queue on two phones" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="preload" href="/fonts/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preload" href="/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin />
   <style>
     @font-face {
-      font-family: 'Inter';
+      font-family: 'Bricolage Grotesque';
       font-style: normal;
-      font-weight: 400 800;
+      font-weight: 300 800;
       font-display: swap;
-      src: url('/fonts/inter-var-latin.woff2') format('woff2');
+      src: url('/fonts/bricolage-grotesque-latin.woff2') format('woff2');
     }
 
     :root {
-      --green: #1DB954;
-      --green-dim: #179443;
-      --bg: #0d0d14;
-      --surface: #16161f;
-      --surface2: #1e1e2a;
-      --text: #e8e8f0;
-      --muted: #8888a0;
+      color-scheme: dark;
+      --bg: oklch(0.15 0.012 165);
+      --surface: oklch(0.2 0.012 165);
+      --line: oklch(1 0 0 / 0.1);
+      --text: oklch(0.96 0.006 165);
+      --muted: oklch(0.76 0.012 165);
+      --dim: oklch(0.96 0.006 165 / 0.5);
+      --accent: #1db954;
+      --accent-hover: oklch(0.82 0.2 150);
+      --on-accent: #07110b;
+      --font: 'Bricolage Grotesque', system-ui, sans-serif;
+      --section: clamp(4.5rem, 9vw, 8rem);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -62,377 +69,458 @@ const features = [
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', system-ui, sans-serif;
+      font-family: var(--font);
+      font-optical-sizing: auto;
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
 
-    nav {
+    a { color: inherit; }
+
+    :focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    .skip {
+      position: absolute;
+      left: 1rem;
+      top: -4rem;
+      z-index: 200;
+      padding: 0.75rem 1.25rem;
+      background: var(--accent);
+      color: var(--on-accent);
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 999px;
+    }
+    .skip:focus { top: 1rem; }
+
+    .wrap { width: min(1160px, 100% - 3rem); margin-inline: auto; }
+
+    /* Header */
+    .site-header {
       position: sticky;
       top: 0;
       z-index: 100;
+      background: color-mix(in oklab, var(--bg) 92%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .site-header .wrap {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 2rem;
-      background: rgba(13, 13, 20, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      min-height: 4rem;
     }
-
-    .nav-logo {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--green);
-      text-decoration: none;
-      letter-spacing: -0.02em;
-    }
-
-    .nav-links { display: flex; gap: 1.5rem; }
-    .nav-links a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: var(--text); }
-
-    .hero {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 6rem 1.5rem 5rem;
-      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(29,185,84,0.12) 0%, transparent 70%);
-    }
-
-    .badge {
+    .brand {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      padding: 0.3rem 0.8rem;
-      border: 1px solid rgba(29,185,84,0.4);
-      border-radius: 999px;
-      font-size: 0.8rem;
-      color: var(--green);
-      margin-bottom: 1.5rem;
-      background: rgba(29,185,84,0.08);
+      gap: 0.65rem;
+      min-height: 44px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-decoration: none;
     }
-
-    h1 {
-      font-size: clamp(2.5rem, 6vw, 4.5rem);
-      font-weight: 800;
-      line-height: 1.1;
-      letter-spacing: -0.03em;
-      max-width: 800px;
-    }
-
-    h1 span { color: var(--green); }
-
-    .hero-sub {
+    .brand img { width: 30px; height: 30px; border-radius: 8px; }
+    .nav { display: flex; align-items: center; gap: 0.5rem; }
+    .nav a:not(.btn) {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 0.75rem;
       color: var(--muted);
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      max-width: 560px;
-      margin: 1.5rem auto 2.5rem;
+      text-decoration: none;
+      transition: color 0.15s;
     }
+    .nav a:not(.btn):hover { color: var(--text); }
 
-    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
-
+    /* Buttons */
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.85rem 1.8rem;
-      border-radius: 999px;
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: transform 0.15s, box-shadow 0.15s;
-      cursor: pointer;
-    }
-    .btn:hover { transform: translateY(-2px); }
-
-    .btn-primary {
-      background: var(--green);
-      color: #000;
-      box-shadow: 0 0 24px rgba(29,185,84,0.35);
-    }
-    .btn-primary:hover { background: #21d160; box-shadow: 0 0 32px rgba(29,185,84,0.5); }
-
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .btn-secondary:hover { background: var(--surface2); }
-
-    .demo {
-      margin: 0 auto;
-      padding: 4rem 1.5rem;
-      max-width: 480px;
-    }
-
-    .demo-card {
-      background: var(--surface);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 1.5rem;
-      padding: 1.5rem;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    .demo-track {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      margin-bottom: 1rem;
-    }
-
-    .demo-art {
-      width: 42px;
-      height: 42px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #1DB954 0%, #0d4a24 100%);
-      flex-shrink: 0;
-    }
-
-    .demo-info .title { color: var(--text); font-weight: 600; font-size: 0.95rem; }
-    .demo-info .artist { font-size: 0.82rem; }
-
-    .lyric-line { padding: 0.35rem 0.6rem; border-radius: 6px; margin: 0.15rem 0; }
-    .lyric-active {
-      background: rgba(29,185,84,0.15);
-      color: var(--green);
-      font-weight: 600;
-      font-size: 1rem;
-    }
-
-    .features {
-      padding: 5rem 1.5rem;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    .section-label {
-      text-align: center;
-      color: var(--green);
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-    }
-
-    .section-title {
-      text-align: center;
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 3.5rem;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 1.25rem;
-      padding: 1.75rem;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .card:hover { border-color: rgba(29,185,84,0.3); transform: translateY(-3px); }
-
-    .card-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--green); }
-    .card-desc { color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
-
-    .platforms {
-      padding: 4rem 1.5rem;
-      background: var(--surface);
-      border-top: 1px solid rgba(255,255,255,0.06);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      text-align: center;
-    }
-
-    .platforms h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 2rem; }
-
-    .platform-row {
-      display: flex;
       justify-content: center;
-      gap: 3rem;
-      flex-wrap: wrap;
+      min-height: 52px;
+      padding: 0 1.75rem;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--on-accent);
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background-color 0.15s;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-small { min-height: 44px; padding: 0 1.25rem; font-size: 0.95rem; }
+
+    .text-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 52px;
+      padding: 0 0.25rem;
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-color: var(--line);
+      text-underline-offset: 0.3em;
+      transition: text-decoration-color 0.15s;
+    }
+    .text-link:hover { text-decoration-color: var(--accent); }
+
+    /* Hero */
+    .hero {
+      padding-block: clamp(3rem, 7vw, 6rem) var(--section);
+      background:
+        radial-gradient(55% 50% at 84% 18%, oklch(0.5 0.1 85 / 0.2), transparent 70%),
+        radial-gradient(50% 60% at 60% 75%, oklch(0.42 0.12 262 / 0.22), transparent 70%);
+    }
+    .hero .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: clamp(2rem, 6vw, 5rem);
+      align-items: center;
     }
 
-    .platform-item {
+    h1 {
+      font-size: clamp(2.9rem, 6.4vw, 5.75rem);
+      font-weight: 700;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+    }
+    /* Set like the app's lyric view: the current line bright, the others dimmed. */
+    h1 .line { display: block; }
+    h1 .dim { color: var(--dim); }
+
+    .hero-sub {
+      max-width: 34em;
+      margin-top: 1.75rem;
       color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 500;
+      font-size: clamp(1.1rem, 1.6vw, 1.3rem);
     }
+    .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-top: 2.25rem; }
+    .meta { margin-top: 0.75rem; color: var(--muted); font-size: 0.95rem; }
 
-    .cta {
-      padding: 6rem 1.5rem;
-      text-align: center;
-      background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(29,185,84,0.1) 0%, transparent 70%);
+    /* Phone screenshots */
+    .phone {
+      width: 100%;
+      max-width: 340px;
+      margin-inline: auto;
+      overflow: hidden;
+      background: #050806;
+      border: 7px solid #050806;
+      border-radius: 2.6rem;
+      outline: 1px solid var(--line);
+      box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.7);
     }
+    .phone img { display: block; width: 100%; height: auto; border-radius: 2rem; }
 
-    .cta h2 {
-      font-size: clamp(1.8rem, 4vw, 3rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
+    /* Feature rows */
+    .rows { display: grid; gap: var(--section); padding-block: 0 var(--section); }
+    .row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+      gap: clamp(2rem, 7vw, 6rem);
+      align-items: center;
+    }
+    .row.flip { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); }
+    .row.flip .copy { order: 2; }
+    .row.pair { grid-template-columns: minmax(0, 1fr) minmax(0, 700px); }
+    .pair .phones { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1rem, 3vw, 2rem); }
+
+    h2 {
+      font-size: clamp(2rem, 4.2vw, 3.4rem);
+      font-weight: 700;
+      line-height: 1.06;
+      letter-spacing: -0.03em;
+      text-wrap: balance;
+    }
+    .copy p { max-width: 30em; margin-top: 1.25rem; color: var(--muted); font-size: 1.15rem; }
+
+    /* Also in the app */
+    .also { padding-block: 0 var(--section); }
+    .also .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(2rem, 7vw, 6rem); }
+    .also ul { list-style: none; border-top: 1px solid var(--line); }
+    .also li { padding-block: 1.1rem; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 1.1rem; }
+
+    /* Android Auto */
+    .auto { padding-block: var(--section); background: var(--surface); border-block: 1px solid var(--line); }
+    .auto-copy { max-width: 42rem; }
+    .auto p { margin-top: 1.25rem; color: var(--muted); font-size: 1.15rem; }
+    .tag {
+      display: inline-block;
       margin-bottom: 1rem;
+      padding: 0.25rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
     }
 
-    .cta p { color: var(--muted); margin-bottom: 2.5rem; max-width: 500px; margin-left: auto; margin-right: auto; }
+    /* Download */
+    .get { padding-block: var(--section); }
+    .get .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(2rem, 7vw, 6rem); align-items: start; }
+    .get p.lead { margin-top: 1.25rem; color: var(--muted); font-size: 1.15rem; max-width: 30em; }
+    .steps { margin-top: 0.5rem; padding-left: 1.4rem; color: var(--muted); font-size: 1.1rem; }
+    .steps li { padding-block: 0.6rem; padding-left: 0.4rem; }
+    .steps li::marker { color: var(--accent); font-weight: 700; }
+    .steps strong { color: var(--text); }
 
-    footer {
-      padding: 2rem 1.5rem;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.85rem;
-      border-top: 1px solid rgba(255,255,255,0.06);
+    footer { padding-block: 2.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.95rem; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem 2rem; }
+    footer nav { display: flex; flex-wrap: wrap; gap: 0 1.25rem; }
+    footer a { display: inline-flex; align-items: center; min-height: 44px; }
+
+    @media (max-width: 899px) {
+      .hero .wrap, .row, .row.flip, .row.pair, .also .wrap, .get .wrap { grid-template-columns: minmax(0, 1fr); }
+      .row.flip .copy { order: 0; }
+      .phone { max-width: 300px; }
+      .pair .phones .phone { max-width: none; }
+      .site-header .wrap { min-height: 3.5rem; }
     }
-    footer a { color: var(--muted); text-decoration: underline; }
 
-    @media (max-width: 600px) {
-      nav { padding: 0.75rem 1rem; }
-      .nav-links { gap: 1rem; }
+    @media (max-width: 480px) {
+      .nav a:not(.btn) { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
     }
   </style>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to content</a>
 
-  <nav>
-    <a href="#" class="nav-logo">CarLyrics</a>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href={`https://github.com/${GITHUB_REPO}`} target="_blank" rel="noopener">GitHub</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="CarLyrics home">
+        <img src="/favicon.svg" alt="" width="30" height="30" />
+        CarLyrics
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href={REPO_URL} rel="noopener">Source</a>
+        <a class="btn btn-small" href={RELEASES_URL} data-download rel="noopener">Download</a>
+      </nav>
     </div>
-  </nav>
+  </header>
 
-  <main>
-    <section class="hero">
-      <div class="badge">
-        <span>*</span> Free and Open Source
-      </div>
-      <h1>Lyrics that follow<br /><span>your music, anywhere</span></h1>
-      <p class="hero-sub">
-        CarLyrics brings real time synced lyrics to Android Auto, your phone's lock screen,
-        home screen widget, and notification shade. All at once.
-      </p>
-      <div class="hero-actions">
-        <a href={RELEASES_URL} id="dl-hero" class="btn btn-primary" rel="noopener">
-          Download APK
-        </a>
-        <a href={`https://github.com/${GITHUB_REPO}`} class="btn btn-secondary" target="_blank" rel="noopener">
-          View on GitHub
-        </a>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <div>
+          <h1 id="hero-title">
+            <span class="line dim">Lyrics that</span>
+            <span class="line">keep up with</span>
+            <span class="line dim">the song.</span>
+          </h1>
+          <p class="hero-sub">
+            CarLyrics shows synced lyrics for what you are playing in Spotify and other
+            Android music apps. Free, open source, no account.
+          </p>
+          <div class="hero-actions">
+            <a class="btn" href={RELEASES_URL} data-download rel="noopener">Download APK</a>
+            <a class="text-link" href={REPO_URL} rel="noopener">Source on GitHub</a>
+          </div>
+          <p class="meta" data-download-meta>Android 11 or newer</p>
+        </div>
+        <div class="phone">
+          <Image
+            src={lyrics}
+            widths={[300, 480, 640]}
+            sizes="(min-width: 900px) 340px, 300px"
+            alt="The CarLyrics home screen playing Blinding Lights by The Weeknd. The current lyric line is white and the lines around it are dimmed, over a gradient taken from the album cover, with a seek bar and player controls below."
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
       </div>
     </section>
 
-    <div class="demo">
-      <div class="demo-card">
-        <div class="demo-track">
-          <div class="demo-art"></div>
-          <div class="demo-info">
-            <div class="title">Bohemian Rhapsody</div>
-            <div class="artist">Queen</div>
+    <div class="rows">
+      <section class="row wrap" aria-labelledby="t-follow">
+        <div class="copy">
+          <h2 id="t-follow">Tap a line. The song follows.</h2>
+          <p>
+            Lines light up as they are sung. Tap any line, or drag the seek bar, and the song
+            jumps with you. Scroll ahead to read what is coming, then one tap on Sync to song
+            brings you back.
+          </p>
+        </div>
+        <div class="phone">
+          <Image
+            src={seek}
+            widths={[300, 480, 640]}
+            sizes="(min-width: 900px) 340px, 300px"
+            alt="The start of Starboy by The Weeknd, with the first lyric line in white, the seek bar at 0:13 of 3:20 and the player controls."
+            loading="lazy"
+          />
+        </div>
+      </section>
+
+      <section class="row flip wrap" aria-labelledby="t-next">
+        <div class="phone">
+          <Image
+            src={queue}
+            widths={[300, 480, 640]}
+            sizes="(min-width: 900px) 340px, 300px"
+            alt="A Queue sheet listing five songs by The Weeknd, with Blinding Lights marked as playing."
+            loading="lazy"
+          />
+        </div>
+        <div class="copy">
+          <h2 id="t-next">See what is next.</h2>
+          <p>
+            When your player shares its queue, an Up next list appears next to the controls.
+            Tap a song to skip straight to it. If your player does not share a queue, the
+            button stays out of the way.
+          </p>
+        </div>
+      </section>
+
+      <section class="row pair wrap" aria-labelledby="t-keep">
+        <div class="copy">
+          <h2 id="t-keep">Keep what you have played.</h2>
+          <p>
+            Every song&rsquo;s lyrics are saved on your phone, so they are there offline. Search
+            them, read them, share one as an .lrc file, or add your own.
+          </p>
+        </div>
+        <div class="phones">
+          <div class="phone">
+            <Image
+              src={library}
+              widths={[240, 400, 540]}
+              sizes="(min-width: 900px) 340px, 45vw"
+              alt="The Library screen listing two saved songs with coloured letter tiles and a Synced tag on each."
+              loading="lazy"
+            />
+          </div>
+          <div class="phone">
+            <Image
+              src={song}
+              widths={[240, 400, 540]}
+              sizes="(min-width: 900px) 340px, 45vw"
+              alt="A saved song opened as a sheet, with Share .lrc and Delete buttons above its lyrics."
+              loading="lazy"
+            />
           </div>
         </div>
-        <div class="lyric-line">Is this the real life?</div>
-        <div class="lyric-line lyric-active">Is this just fantasy?</div>
-        <div class="lyric-line">Caught in a landslide</div>
-        <div class="lyric-line">No escape from reality</div>
-      </div>
+      </section>
+
+      <section class="row flip wrap" aria-labelledby="t-control">
+        <div class="phone">
+          <Image
+            src={settings}
+            widths={[300, 480, 640]}
+            sizes="(min-width: 900px) 340px, 300px"
+            alt="The Settings screen with grouped panels for lyrics sources and playback, an app updates panel reading You are up to date, and a storage panel with a clear saved lyrics action."
+            loading="lazy"
+          />
+        </div>
+        <div class="copy">
+          <h2 id="t-control">Yours to control.</h2>
+          <p>
+            Choose where lyrics come from (LRCLIB, Genius, Musixmatch), turn automatic lookup
+            off, and update the app from inside it. There is nothing to sign in to, and a
+            lookup sends only the song title and artist to the lyrics source.
+          </p>
+        </div>
+      </section>
     </div>
 
-    <section class="features" id="features">
-      <p class="section-label">Everything you need</p>
-      <h2 class="section-title">Lyrics everywhere you listen</h2>
-      <div class="grid">
-        {features.map(f => (
-          <div class="card">
-            <div class="card-title">{f.title}</div>
-            <p class="card-desc">{f.desc}</p>
+    <section class="also" aria-labelledby="t-also">
+      <div class="wrap">
+        <h2 id="t-also">Also in the app.</h2>
+        <ul>
+          {alsoIn.map((item) => <li>{item}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="auto" aria-labelledby="t-auto">
+      <div class="wrap">
+        <div class="auto-copy">
+        <span class="tag">Experimental</span>
+        <h2 id="t-auto">Android Auto.</h2>
+        <p>
+          CarLyrics includes an Android Auto screen that shows the current line and the next
+          few. It is new and has not been tested in a real car yet, so treat it as a preview.
+          If you try it, tell us how it went.
+        </p>
+        <p><a class="text-link" href={`${REPO_URL}/issues`} rel="noopener">Share how it went on GitHub</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="get" id="download" aria-labelledby="t-get">
+      <div class="wrap">
+        <div>
+          <h2 id="t-get">Get CarLyrics.</h2>
+          <p class="lead">
+            Free, no ads, no account. Needs Android 11 or newer. After the first install it
+            updates itself from inside the app.
+          </p>
+          <div class="hero-actions">
+            <a class="btn" href={RELEASES_URL} data-download rel="noopener">Download APK</a>
+            <a class="text-link" href={RELEASES_URL} rel="noopener">All builds</a>
           </div>
-        ))}
+          <p class="meta" data-download-meta>Android 11 or newer</p>
+        </div>
+        <ol class="steps">
+          <li><strong>Download the APK</strong> and open it. Allow installs from your browser if Android asks.</li>
+          <li><strong>Open CarLyrics</strong> and turn on notification access, so it can see what is playing.</li>
+          <li><strong>Play a song.</strong> The lyrics appear and follow along.</li>
+        </ol>
       </div>
-    </section>
-
-    <section class="platforms">
-      <h2>Works across your whole Android setup</h2>
-      <div class="platform-row">
-        <div class="platform-item">Android Phone</div>
-        <div class="platform-item">Android Auto</div>
-        <div class="platform-item">Android Automotive</div>
-        <div class="platform-item">Home Screen Widget</div>
-      </div>
-    </section>
-
-    <section class="cta">
-      <h2>Ready to sync your lyrics?</h2>
-      <p>
-        Download the latest nightly build. Free, no ads, no account needed.
-        Requires Android 11+ and notification access.
-      </p>
-      <a href={RELEASES_URL} id="dl-cta" class="btn btn-primary" rel="noopener">
-        Download latest APK
-      </a>
     </section>
   </main>
 
   <footer>
-    <p>
-      <a href={`https://github.com/${GITHUB_REPO}/blob/main/LICENSE`} target="_blank" rel="noopener">MIT License</a>
-      · Copyright 2025 Michael Liem ·
-      <a href={`https://github.com/${GITHUB_REPO}`} target="_blank" rel="noopener">GitHub</a> ·
-      Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro 7</a>
-    </p>
+    <div class="wrap">
+      <p>CarLyrics is free software under the MIT license. &copy; 2025, 2026 Michael Liem.</p>
+      <nav aria-label="Footer">
+        <a href={`${REPO_URL}/blob/main/LICENSE`} rel="noopener">License</a>
+        <a href={REPO_URL} rel="noopener">Source</a>
+        <a href={`${REPO_URL}/issues`} rel="noopener">Issues</a>
+      </nav>
+    </div>
   </footer>
 
   <script>
-    // Each CTA is a real <a href={RELEASES_URL}>: if this script never runs
-    // (blocked, CSP, JS disabled), the link still opens the GitHub releases
-    // page directly instead of doing nothing on click.
-    function setupDownload(id: string) {
-      const link = document.getElementById(id) as HTMLAnchorElement | null;
-      if (!link) return;
-      let busy = false;
-      link.addEventListener('click', (event) => {
-        if (busy) {
-          event.preventDefault();
-          return;
+    // Every download link is a real link to the releases page, so it works with scripts blocked.
+    // When the build list loads, they are pointed straight at the newest APK instead.
+    type Release = { draft: boolean; assets: Array<{ name: string; size: number; browser_download_url: string }> };
+
+    (async () => {
+      try {
+        const res = await fetch('https://api.github.com/repos/mliem2k/carlyrics/releases', {
+          signal: AbortSignal.timeout(6000),
+        });
+        if (!res.ok) return;
+        const releases: Release[] = await res.json();
+        const apk = releases
+          .filter((r) => !r.draft)
+          .flatMap((r) => r.assets)
+          .find((a) => a.name.endsWith('.apk'));
+        if (!apk) return;
+
+        for (const link of document.querySelectorAll<HTMLAnchorElement>('a[data-download]')) {
+          link.href = apk.browser_download_url;
         }
-        event.preventDefault();
-        busy = true;
-        const orig = link.textContent;
-        link.textContent = 'Fetching...';
-        (async () => {
-          try {
-            const res = await fetch('https://api.github.com/repos/mliem2k/carlyrics/releases');
-            const releases: Array<{ prerelease: boolean; assets: Array<{ name: string; browser_download_url: string }> }> = await res.json();
-            const nightly = releases.find((r) => r.prerelease);
-            const apk = nightly?.assets?.find((a) => a.name.endsWith('.apk'));
-            if (!apk) throw new Error('APK not found');
-            window.location.href = apk.browser_download_url;
-            link.textContent = orig;
-          } catch {
-            // Fall back to the plain releases page rather than a dead end.
-            window.location.href = link.href;
-          } finally {
-            busy = false;
-          }
-        })();
-      });
-    }
-    setupDownload('dl-hero');
-    setupDownload('dl-cta');
+        const build = apk.name.replace(/^carlyrics_/, '').replace(/\.apk$/, '');
+        const mb = (apk.size / 1048576).toFixed(1);
+        for (const meta of document.querySelectorAll('[data-download-meta]')) {
+          meta.textContent = `${build}, ${mb} MB. Android 11 or newer`;
+        }
+      } catch {
+        // Keep the plain releases link.
+      }
+    })();
   </script>
 </body>
 </html>
