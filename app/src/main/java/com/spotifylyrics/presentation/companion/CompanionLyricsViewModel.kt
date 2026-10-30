@@ -4,23 +4,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.domain.repository.LyricsRepository
-import com.mliem.carlyrics.domain.repository.TrackRepository
+import com.mliem.carlyrics.data.update.AppUpdater
+import com.mliem.carlyrics.domain.repository.SettingsRepository
 import com.mliem.carlyrics.service.media.MediaSessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for Phone Companion Lyrics View
+ * ViewModel for the home screen: the current track, its lyrics following playback, the
+ * player controls, and the self update status.
  */
 @HiltViewModel
 class CompanionLyricsViewModel @Inject constructor(
     private val mediaSessionManager: MediaSessionManager,
     private val lyricsRepository: LyricsRepository,
-    private val trackRepository: TrackRepository
+    private val settingsRepository: SettingsRepository,
+    val updater: AppUpdater
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CompanionUiState())
@@ -35,6 +39,7 @@ class CompanionLyricsViewModel @Inject constructor(
     val playbackPositionMs: StateFlow<Long> = _playbackPositionMs.asStateFlow()
     
     init {
+        updater.check()
         setupMediaSessionListener()
         observePlaybackUpdates()
     }
@@ -47,9 +52,11 @@ class CompanionLyricsViewModel @Inject constructor(
                     val isNewTrack = _uiState.value.currentTrack?.getKey() != track.getKey()
                     _uiState.value = _uiState.value.copy(currentTrack = track)
                     if (isNewTrack) {
-                        _uiState.value = _uiState.value.copy(lyrics = emptyList())
+                        _uiState.value = _uiState.value.copy(lyrics = emptyList(), error = null)
                         _currentLyricIndex.value = 0
-                        fetchLyrics(track.artist, track.track)
+                        if (settingsRepository.isAutoFetchEnabled().first()) {
+                            fetchLyrics(track.artist, track.track)
+                        }
                     }
                 }
             }
@@ -65,6 +72,11 @@ class CompanionLyricsViewModel @Inject constructor(
         }
     }
     
+    /** Looks the current track up again, for the Try again and Fetch lyrics buttons. */
+    fun retryLyrics() {
+        _uiState.value.currentTrack?.let { fetchLyrics(it.artist, it.track) }
+    }
+
     private fun fetchLyrics(artist: String, title: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -93,7 +105,7 @@ class CompanionLyricsViewModel @Inject constructor(
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = e.message
+                        error = e.message ?: "No lyrics found"
                     )
                 }
         }

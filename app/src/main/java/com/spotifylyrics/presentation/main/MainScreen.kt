@@ -1,14 +1,21 @@
 package com.mliem.carlyrics.presentation.main
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,21 +24,29 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,9 +56,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,23 +71,44 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.mliem.carlyrics.BuildConfig
-import com.mliem.carlyrics.domain.model.Lyrics
 import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.presentation.companion.CompanionLyricsViewModel
+import com.mliem.carlyrics.presentation.companion.LyricLine
 import com.mliem.carlyrics.presentation.update.UpdateCard
 import com.mliem.carlyrics.presentation.update.needsAttention
 
-private val Panel = Color(0xFF1A1A1A)
-private const val PREVIEW_LINES = 6
+private const val ANIM_MS = 220
 
+// Dim levels keep large bold text above 3:1 against black.
+private const val ALPHA_UPCOMING = 0.55f
+private const val ALPHA_PAST = 0.38f
+
+private val Panel = Color(0xFF1A1A1A)
+private val Muted = Color.White.copy(alpha = 0.7f)
+
+private val LyricStyle = TextStyle(
+    fontSize = 28.sp,
+    lineHeight = 34.sp,
+    fontWeight = FontWeight.Bold,
+    letterSpacing = (-0.3).sp
+)
+private val PlainLyricStyle = TextStyle(fontSize = 20.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium)
+
+/**
+ * The one screen the app lives on: what is playing, its lyrics following the song, and the
+ * player controls. Library and Settings are one tap away in the top bar.
+ */
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel,
+    viewModel: CompanionLyricsViewModel,
     onNavigateToSettings: () -> Unit,
-    onNavigateToLyrics: () -> Unit,
-    onNavigateToLyricsManager: () -> Unit = {}
+    onNavigateToLyricsManager: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val currentIndex by viewModel.currentLyricIndex.collectAsState()
+    val isPlaying by viewModel.isPlaying.collectAsState()
     val updateState by viewModel.updater.state.collectAsState()
+    val isSynced = remember(uiState.lyrics) { uiState.lyrics.any { it.timeMs > 0 } }
     val context = LocalContext.current
 
     var hasNotificationAccess by remember { mutableStateOf(isNotificationListenerEnabled(context)) }
@@ -76,6 +117,15 @@ fun MainScreen(
         hasNotificationAccess = isNotificationListenerEnabled(context)
     }
 
+    // Someone reading lyrics from a dash mount does not want the screen to time out.
+    val view = LocalView.current
+    DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
+
+    val track = uiState.currentTrack
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -83,58 +133,111 @@ fun MainScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        TopBar(onNavigateToLyricsManager, onNavigateToSettings)
+        TopBar(
+            track = track,
+            isSynced = isSynced,
+            hasLyrics = uiState.lyrics.isNotEmpty(),
+            onLibrary = onNavigateToLyricsManager,
+            onSettings = onNavigateToSettings
+        )
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            if (updateState.needsAttention()) {
-                UpdateCard(
-                    state = updateState,
-                    currentVersion = BuildConfig.VERSION_NAME,
-                    onCheck = viewModel.updater::check,
-                    onUpdate = viewModel.updater::downloadAndInstall
+        if (updateState.needsAttention() || !hasNotificationAccess) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (updateState.needsAttention()) {
+                    UpdateCard(
+                        state = updateState,
+                        currentVersion = BuildConfig.VERSION_NAME,
+                        onCheck = viewModel.updater::check,
+                        onUpdate = viewModel.updater::downloadAndInstall
+                    )
+                }
+                if (!hasNotificationAccess) {
+                    AccessBanner(onOpenSettings = { openNotificationSettings(context) })
+                }
+            }
+        }
+
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            when {
+                track == null -> Message(
+                    title = "Nothing playing",
+                    detail = "Start a song in Spotify. The lyrics follow along here, in your status bar, and on your car screen."
                 )
-            }
-            if (!hasNotificationAccess) {
-                AccessBanner(onOpenSettings = { openNotificationSettings(context) })
-            }
-
-            val track = uiState.currentTrack
-            if (track == null) {
-                NothingPlaying()
-            } else {
-                NowPlaying(track)
-                LyricsSection(
+                uiState.isLoading -> LyricsSkeleton()
+                uiState.lyrics.isNotEmpty() -> LyricsList(
                     lyrics = uiState.lyrics,
-                    isLoading = uiState.isLoading,
-                    hasError = uiState.error != null,
-                    onOpenLyrics = onNavigateToLyrics,
-                    onRetry = { viewModel.fetchLyrics(track) },
-                    onOpenLibrary = onNavigateToLyricsManager
+                    currentIndex = currentIndex,
+                    isSynced = isSynced,
+                    onSeek = viewModel::seekTo
+                )
+                uiState.error != null -> Message(
+                    title = "No lyrics found for this song",
+                    detail = "You can add them yourself by importing an .lrc file in the Lyrics Library.",
+                    actions = {
+                        TextButton(onClick = viewModel::retryLyrics) { Text("Try again") }
+                        TextButton(onClick = onNavigateToLyricsManager) { Text("Open Library") }
+                    }
+                )
+                else -> Message(
+                    title = "Lyrics not loaded yet",
+                    detail = "Automatic lookup is off in Settings.",
+                    actions = { TextButton(onClick = viewModel::retryLyrics) { Text("Fetch lyrics") } }
                 )
             }
+        }
+
+        if (track != null) {
+            PlaybackControls(
+                isPlaying = isPlaying,
+                onPlayPause = viewModel::togglePlayPause,
+                onSkipPrevious = viewModel::skipPrevious,
+                onSkipNext = viewModel::skipNext
+            )
         }
     }
 }
 
 @Composable
-private fun TopBar(onLibrary: () -> Unit, onSettings: () -> Unit) {
+private fun TopBar(
+    track: TrackInfo?,
+    isSynced: Boolean,
+    hasLyrics: Boolean,
+    onLibrary: () -> Unit,
+    onSettings: () -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "CarLyrics",
-            style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = track?.track ?: "CarLyrics",
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            track?.let {
+                Text(
+                    text = it.artist,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                    color = Muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (hasLyrics) {
+                    Text(
+                        text = if (isSynced) "Synced lyrics" else "Lyrics are not time synced",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isSynced) MaterialTheme.colorScheme.primary else Muted,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+        }
         IconButton(onClick = onLibrary) {
             Icon(Icons.Default.LibraryMusic, contentDescription = "Lyrics Library", tint = Color.White)
         }
@@ -144,107 +247,147 @@ private fun TopBar(onLibrary: () -> Unit, onSettings: () -> Unit) {
     }
 }
 
-@Composable
-private fun NowPlaying(track: TrackInfo) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(
-                Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(if (track.isPlaying) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.5f))
-            )
-            Text(
-                text = if (track.isPlaying) "Playing" else "Paused",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (track.isPlaying) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.6f)
-            )
-        }
-        Text(
-            text = track.track,
-            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold),
-            color = Color.White,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = track.artist,
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-            color = Color.White.copy(alpha = 0.7f),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        track.album?.takeIf { it.isNotBlank() }?.let {
-            Text(text = it, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.55f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
+private enum class LineState { Past, Current, Upcoming }
 
 @Composable
-private fun LyricsSection(
-    lyrics: Lyrics?,
-    isLoading: Boolean,
-    hasError: Boolean,
-    onOpenLyrics: () -> Unit,
-    onRetry: () -> Unit,
-    onOpenLibrary: () -> Unit
+private fun LyricsList(
+    lyrics: List<LyricLine>,
+    currentIndex: Int,
+    isSynced: Boolean,
+    onSeek: (Long) -> Unit
 ) {
-    when {
-        isLoading -> PreviewSkeleton()
-        lyrics != null -> Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(
-                onClick = onOpenLyrics,
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
-                modifier = Modifier.fillMaxWidth().height(52.dp)
-            ) {
-                Text(if (lyrics.isSynced) "Open synced lyrics" else "Open lyrics", fontWeight = FontWeight.Bold, fontSize = 16.sp, letterSpacing = 0.sp)
-            }
-            Text(
-                text = lyrics.plainLyrics.lines().filter { it.isNotBlank() }.take(PREVIEW_LINES).joinToString("\n"),
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
-                color = Color.White.copy(alpha = 0.55f)
-            )
-        }
-        else -> Column(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+    val listState = rememberLazyListState()
+    var following by remember { mutableStateOf(true) }
+
+    // A finger on the list means the user wants to read ahead, so stop pulling it back.
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { if (it is DragInteraction.Start) following = false }
+    }
+    LaunchedEffect(currentIndex, following, isSynced) {
+        if (following && isSynced && currentIndex >= 0) listState.animateScrollToItem(currentIndex)
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            // Top padding parks the current line in the upper third, where the eye rests.
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = maxHeight * 0.22f, bottom = maxHeight * 0.5f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Text(
-                text = if (hasError) "No lyrics found for this song" else "Lyrics not loaded yet",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White
-            )
-            if (hasError) {
-                Text(
-                    text = "You can add them yourself by importing an .lrc file in the Lyrics Library.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-                Row {
-                    TextButton(onClick = onRetry) { Text("Try again") }
-                    TextButton(onClick = onOpenLibrary) { Text("Open Library") }
+            itemsIndexed(lyrics) { index, line ->
+                if (isSynced) {
+                    val state = when {
+                        index == currentIndex -> LineState.Current
+                        index < currentIndex -> LineState.Past
+                        else -> LineState.Upcoming
+                    }
+                    SyncedLine(
+                        text = line.text,
+                        state = state,
+                        onClick = {
+                            following = true
+                            onSeek(line.timeMs)
+                        }
+                    )
+                } else {
+                    Text(
+                        text = line.text,
+                        style = PlainLyricStyle,
+                        color = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                    )
                 }
-            } else {
-                TextButton(onClick = onRetry) { Text("Fetch lyrics") }
+            }
+        }
+
+        if (!following && isSynced) {
+            Surface(
+                onClick = { following = true },
+                shape = CircleShape,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = "Sync to song",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun NothingPlaying() {
-    Column(modifier = Modifier.padding(top = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun SyncedLine(text: String, state: LineState, onClick: () -> Unit) {
+    val targetAlpha = when (state) {
+        LineState.Current -> 1f
+        LineState.Upcoming -> ALPHA_UPCOMING
+        LineState.Past -> ALPHA_PAST
+    }
+    val color by animateColorAsState(Color.White.copy(alpha = targetAlpha), tween(ANIM_MS, easing = FastOutSlowInEasing), label = "lineColor")
+    // Scale instead of font size: the text never re-wraps while it changes emphasis.
+    val scale by animateFloatAsState(if (state == LineState.Current) 1f else 0.9f, tween(ANIM_MS, easing = FastOutSlowInEasing), label = "lineScale")
+
+    Text(
+        text = text.ifBlank { "♪" },
+        style = LyricStyle,
+        color = color,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { selected = state == LineState.Current }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = TransformOrigin(0f, 0.5f)
+            }
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp)
+    )
+}
+
+@Composable
+private fun LyricsSkeleton() {
+    val alpha by rememberInfiniteTransition(label = "skeleton").animateFloat(
+        initialValue = 0.08f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "skeletonAlpha"
+    )
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 48.dp).semantics { contentDescription = "Loading lyrics" },
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        listOf(0.9f, 0.7f, 0.8f, 0.55f, 0.85f, 0.6f).forEach { width ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(width)
+                    .height(28.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White.copy(alpha = alpha))
+            )
+        }
+    }
+}
+
+@Composable
+private fun Message(title: String, detail: String, actions: @Composable () -> Unit = {}) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Text(
-            text = "Nothing playing",
-            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold),
+            text = title,
+            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold),
             color = Color.White
         )
         Text(
-            text = "Start a song in Spotify. The lyrics follow along here, in your status bar, and on your car screen.",
+            text = detail,
             style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp, lineHeight = 25.sp),
-            color = Color.White.copy(alpha = 0.7f)
+            color = Muted
         )
+        Row { actions() }
     }
 }
 
@@ -258,36 +401,44 @@ private fun AccessBanner(onOpenSettings: () -> Unit) {
         Text(
             text = "CarLyrics needs it to see which song is playing.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f)
+            color = Muted
         )
         Button(
             onClick = onOpenSettings,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
             modifier = Modifier.fillMaxWidth()
-        ) { Text("Open settings", fontWeight = FontWeight.Bold, letterSpacing = 0.sp) }
+        ) { Text("Open settings", fontWeight = FontWeight.Bold) }
     }
 }
 
 @Composable
-private fun PreviewSkeleton() {
-    val alpha by rememberInfiniteTransition(label = "preview").animateFloat(
-        initialValue = 0.08f,
-        targetValue = 0.2f,
-        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
-        label = "previewAlpha"
-    )
-    Column(
-        modifier = Modifier.semantics { contentDescription = "Loading lyrics" },
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+private fun PlaybackControls(
+    isPlaying: Boolean,
+    onPlayPause: () -> Unit,
+    onSkipPrevious: () -> Unit,
+    onSkipNext: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        listOf(1f, 0.85f, 0.7f, 0.9f).forEach { width ->
-            Box(
-                Modifier
-                    .fillMaxWidth(width)
-                    .height(24.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = alpha))
+        IconButton(onClick = onSkipPrevious, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.SkipPrevious, contentDescription = "Previous track", tint = Color.White, modifier = Modifier.size(32.dp))
+        }
+        IconButton(
+            onClick = onPlayPause,
+            modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.White)
+        ) {
+            Icon(
+                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = Color.Black,
+                modifier = Modifier.size(36.dp)
             )
+        }
+        IconButton(onClick = onSkipNext, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.SkipNext, contentDescription = "Next track", tint = Color.White, modifier = Modifier.size(32.dp))
         }
     }
 }
