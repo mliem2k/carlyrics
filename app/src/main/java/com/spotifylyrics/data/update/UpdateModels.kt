@@ -22,16 +22,20 @@ sealed interface UpdateState {
     data class Failed(val message: String) : UpdateState
 }
 
-private val NIGHTLY = Regex("""nightly_(\d{8})""")
+// nightly_YYYYMMDD, or nightly_YYYYMMDD_N for the Nth build of that day (no suffix counts as 1).
+private val NIGHTLY = Regex("""nightly_(\d{8})(?:_(\d+))?""")
 
-/**
- * True when [remoteTag] is a later nightly than [localVersionName].
- * ponytail: compares the build date only, so two builds on the same day look identical;
- * compare a monotonic build number if same day updates matter.
- */
+private fun buildKey(name: String): Long? {
+    val match = NIGHTLY.matchEntire(name) ?: return null
+    val day = match.groupValues[1].toLong()
+    val sequence = match.groupValues[2].ifEmpty { "1" }.toLong()
+    return day * 1000 + sequence
+}
+
+/** True when [remoteTag] is a later nightly than [localVersionName]. */
 fun isNewer(remoteTag: String, localVersionName: String): Boolean {
-    val remote = NIGHTLY.matchEntire(remoteTag)?.groupValues?.get(1) ?: return false
-    val local = NIGHTLY.matchEntire(localVersionName)?.groupValues?.get(1) ?: return false
+    val remote = buildKey(remoteTag) ?: return false
+    val local = buildKey(localVersionName) ?: return false
     return remote > local
 }
 

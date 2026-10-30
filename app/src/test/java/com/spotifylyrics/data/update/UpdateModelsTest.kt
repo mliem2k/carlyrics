@@ -20,6 +20,15 @@ class UpdateModelsTest {
     }
 
     @Test
+    fun laterBuildOfTheSameDayIsNewer() {
+        assertTrue(isNewer("nightly_20261030_2", "nightly_20261030"))
+        assertTrue(isNewer("nightly_20261030_3", "nightly_20261030_2"))
+        assertFalse(isNewer("nightly_20261030_2", "nightly_20261030_2"))
+        assertFalse(isNewer("nightly_20261030", "nightly_20261030_2"))
+        assertFalse(isNewer("nightly_20261030_2", "nightly_20261031"))
+    }
+
+    @Test
     fun builtsThatAreNotNightliesNeverUpdate() {
         assertFalse(isNewer("nightly_20261105", "2.0.0-debug"))
         assertFalse(isNewer("v3.0.0", "nightly_20261029"))
