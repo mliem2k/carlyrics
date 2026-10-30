@@ -7,7 +7,6 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.mliem.carlyrics.service.LyricsOrchestrator
 import com.mliem.carlyrics.service.auto.screen.CarLyricsScreen
-import com.mliem.carlyrics.service.auto.screen.CarMainScreen
 import com.mliem.carlyrics.service.media.MediaSessionManager
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -19,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @EntryPoint
@@ -68,7 +68,7 @@ class CarLyricsSession : Session() {
             }
         })
 
-        return CarMainScreen(carContext)
+        return screen
     }
 
     private fun observeLiveData(
@@ -81,9 +81,12 @@ class CarLyricsSession : Session() {
             mediaManager.currentTrackFlow,
             mediaManager.playbackPositionFlow
         ) { lyrics, track, positionMs ->
-            Triple(track, lyrics, positionMs)
-        }.collect { (track, lyrics, positionMs) ->
-            screen.update(track, lyrics, positionMs)
+            Triple(track, lyrics, lyrics?.getCurrentLyricIndex(positionMs) ?: -1)
         }
+            // The host throttles template refreshes, so only redraw when the line changes.
+            .distinctUntilChanged()
+            .collect { (track, lyrics, lineIndex) ->
+                screen.update(track, lyrics, lineIndex)
+            }
     }
 }

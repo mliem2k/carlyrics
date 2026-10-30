@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.mliem.carlyrics.presentation.navigation.NavGraph
 import com.mliem.carlyrics.presentation.theme.CarLyricsTheme
-import com.mliem.carlyrics.service.foreground.LyricsForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -23,9 +22,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Android 13+ hides the status-bar lyrics until this is granted.
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            LyricsForegroundService.startService(this)
-        }.launch(Manifest.permission.POST_NOTIFICATIONS)
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+            .launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent {
             CarLyricsTheme {
                 Surface(

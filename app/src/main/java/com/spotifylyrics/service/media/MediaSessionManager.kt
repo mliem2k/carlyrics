@@ -19,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -74,15 +75,17 @@ class MediaSessionManager @Inject constructor(
         activeConsumers++
         if (tickerJob != null) return
         tickerJob = scope.launch {
-            var ticksSinceRetry = 0
             while (true) {
-                delay(TICK_MS)
                 if (!listening) {
                     // Notification access may be granted after startup, so keep retrying.
-                    if (ticksSinceRetry++ % RETRY_EVERY_TICKS == 0) mainHandler.post { tryListen() }
-                } else if (anchor.playing) {
-                    _playbackPositionFlow.value = anchor.estimateAt(SystemClock.elapsedRealtime())
+                    mainHandler.post { tryListen() }
+                    delay(RETRY_MS)
+                    continue
                 }
+                // Sleep until something plays: no wakeups while paused or idle.
+                _isPlaying.first { it }
+                delay(TICK_MS)
+                if (anchor.playing) _playbackPositionFlow.value = anchor.estimateAt(SystemClock.elapsedRealtime())
             }
         }
     }
@@ -134,7 +137,8 @@ class MediaSessionManager @Inject constructor(
 
     private fun bind(newControllers: List<MediaController>?) {
         controllers.forEach { it.unregisterCallback(controllerCallback) }
-        controllers = newControllers.orEmpty()
+        // Video apps such as YouTube publish sessions too; looking up lyrics for them is wasted work.
+        controllers = newControllers.orEmpty().filter { it.packageName in MUSIC_PACKAGES }
         controllers.forEach { it.registerCallback(controllerCallback, mainHandler) }
         publish()
     }
@@ -183,7 +187,7 @@ class MediaSessionManager @Inject constructor(
     companion object {
         private const val TAG = "MediaSessionManager"
         private const val TICK_MS = 250L
-        private const val RETRY_EVERY_TICKS = 8
+        private const val RETRY_MS = 2_000L
         private val SPOTIFY_PACKAGES = setOf("com.spotify.music", "com.spotify.lite")
     }
 }
@@ -210,3 +214,24 @@ internal data class PositionAnchor(
 internal fun looksLikeAdvertisement(title: String, artist: String): Boolean =
     title.equals("Advertisement", ignoreCase = true) ||
         (title.equals("Spotify", ignoreCase = true) && artist.equals("Advertisement", ignoreCase = true))
+
+/** Music players whose sessions get lyrics. Anything else (YouTube, Netflix, podcasts) is ignored. */
+internal val MUSIC_PACKAGES = setOf(
+    "com.spotify.music",
+    "com.spotify.lite",
+    "com.apple.android.music",
+    "com.google.android.apps.youtube.music",
+    "com.amazon.mp3",
+    "com.pandora.android",
+    "com.iheart.android",
+    "com.soundcloud.android",
+    "com.saavn.android",
+    "com.miui.player",
+    "com.sec.android.app.music",
+    "com.sonyericsson.music",
+    "com.maxmpz.audioplayer",
+    "com.nullsoft.winamp",
+    "com.deezer.android.app",
+    "com.aspiro.tidal",
+    "com.qobuz.music"
+)

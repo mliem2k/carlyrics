@@ -21,13 +21,15 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val getCurrentTrackUseCase: GetCurrentTrackUseCase,
     private val getLyricsUseCase: GetLyricsUseCase,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    val updater: com.mliem.carlyrics.data.update.AppUpdater
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     init {
+        updater.check()
         observeCurrentTrack()
     }
 
