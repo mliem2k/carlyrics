@@ -87,18 +87,20 @@ class CarLyricsSession : Session() {
             orchestrator.currentLyrics,
             mediaManager.currentTrackFlow,
             mediaManager.playbackPositionFlow,
-            mediaManager.artworkPalette
-        ) { lyrics, track, positionMs, palette ->
+            mediaManager.artworkPalette,
+            mediaManager.isPlaying
+        ) { lyrics, track, positionMs, palette, playing ->
             CarFrame(
                 track = track,
                 lyrics = lyrics,
                 lineIndex = lyrics?.getCurrentLyricIndex(positionMs) ?: -1,
-                backdrop = palette?.let { backdropColor(it.primary) } ?: Color.BLACK
+                backdrop = palette?.let { backdropColor(it.primary) } ?: Color.BLACK,
+                isPlaying = playing
             )
         }
             // Only redraw when something visible changes: the line, not every position tick.
             .distinctUntilChanged()
-            .collect { screen.update(it.track, it.lyrics, it.lineIndex, it.backdrop) }
+            .collect { screen.update(it.track, it.lyrics, it.lineIndex, it.backdrop, it.isPlaying) }
     }
 }
 
@@ -106,5 +108,6 @@ private data class CarFrame(
     val track: com.mliem.carlyrics.domain.model.TrackInfo?,
     val lyrics: com.mliem.carlyrics.domain.model.Lyrics?,
     val lineIndex: Int,
-    val backdrop: Int
+    val backdrop: Int,
+    val isPlaying: Boolean
 )

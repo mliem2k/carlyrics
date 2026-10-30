@@ -1,5 +1,6 @@
 package com.mliem.carlyrics.service.auto.screen
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -23,6 +24,7 @@ import androidx.car.app.model.CarColor
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.NavigationTemplate
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -46,14 +48,20 @@ class CarLyricsScreen(
     private var lyrics: Lyrics? = null
     private var lineIndex: Int = -1
     private var backdrop: Int = Color.BLACK
+    private var isPlaying: Boolean = false
 
     private var surface: Surface? = null
     private var width = 0
     private var height = 0
     private var density = 1f
 
-    // The part of the surface no host overlay (clock, buttons) covers.
-    private var safeArea: Rect? = null
+    // The host promises this rectangle is never covered, so everything important stays inside it.
+    private var stableArea: Rect? = null
+
+    // Reused between frames: allocating paints and shaders per draw costs frames on a head unit.
+    private val backgroundPaint = Paint()
+    private val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG)
+    private var shaderKey = 0L
 
     init {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -76,13 +84,8 @@ class CarLyricsScreen(
             draw()
         }
 
-        override fun onVisibleAreaChanged(visibleArea: Rect) {
-            safeArea = visibleArea
-            draw()
-        }
-
         override fun onStableAreaChanged(stableArea: Rect) {
-            safeArea = stableArea
+            this@CarLyricsScreen.stableArea = stableArea
             draw()
         }
 
@@ -91,17 +94,21 @@ class CarLyricsScreen(
         }
     }
 
-    fun update(track: TrackInfo?, lyrics: Lyrics?, lineIndex: Int, backdrop: Int) {
+    fun update(track: TrackInfo?, lyrics: Lyrics?, lineIndex: Int, backdrop: Int, isPlaying: Boolean) {
+        // The host throttles template updates, so only the play button's icon is worth one.
+        val playStateChanged = this.isPlaying != isPlaying
+        this.isPlaying = isPlaying
         this.track = track
         this.lyrics = lyrics
         this.lineIndex = lineIndex
         this.backdrop = backdrop
         draw()
+        if (playStateChanged) invalidate()
     }
 
     override fun onGetTemplate(): Template {
         fun control(icon: Int, action: () -> Unit) = Action.Builder()
-            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, icon)).build())
+            .setIcon(carIcon(icon))
             .setOnClickListener(action)
             .build()
 
@@ -110,11 +117,22 @@ class CarLyricsScreen(
             .setActionStrip(
                 ActionStrip.Builder()
                     .addAction(control(R.drawable.ic_car_prev, onPrevious))
-                    .addAction(control(R.drawable.ic_car_play_pause, onPlayPause))
+                    .addAction(control(if (isPlaying) R.drawable.ic_car_pause else R.drawable.ic_car_play_pause, onPlayPause))
                     .addAction(control(R.drawable.ic_car_next, onNext))
                     .build()
             )
             .build()
+    }
+
+    // The host remembers icons by resource id, and ids change with every build, so a resource icon can
+    // come back as the wrong picture after an update. A bitmap carries its own pixels instead.
+    private fun carIcon(drawableRes: Int): CarIcon {
+        val drawable = checkNotNull(ContextCompat.getDrawable(carContext, drawableRes))
+        val size = (ICON_DP * carContext.resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        drawable.setBounds(0, 0, size, size)
+        drawable.draw(Canvas(bitmap))
+        return CarIcon.Builder(IconCompat.createWithBitmap(bitmap)).build()
     }
 
     private fun draw() {
@@ -134,16 +152,18 @@ class CarLyricsScreen(
     }
 
     private fun render(canvas: Canvas) {
-        val area = safeArea?.takeIf { !it.isEmpty } ?: Rect(0, 0, width, height)
+        val area = stableArea?.takeIf { !it.isEmpty } ?: Rect(0, 0, width, height)
         val pad = 24 * density
         val left = area.left + pad
         val contentWidth = (area.width() - 2 * pad).toInt().coerceAtLeast(1)
 
         // Same look as the phone: the cover's color fading to black.
-        val background = Paint().apply {
-            shader = LinearGradient(0f, 0f, 0f, height.toFloat(), backdrop, Color.BLACK, Shader.TileMode.CLAMP)
+        val key = (backdrop.toLong() shl 32) or height.toLong()
+        if (key != shaderKey) {
+            backgroundPaint.shader = LinearGradient(0f, 0f, 0f, height.toFloat(), backdrop, Color.BLACK, Shader.TileMode.CLAMP)
+            shaderKey = key
         }
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), background)
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
 
         var y = area.top + pad
         track?.let {
@@ -196,7 +216,7 @@ class CarLyricsScreen(
         bold: Boolean = false,
         maxLines: Int = 4
     ): Float {
-        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        val paint = textPaint.apply {
             this.color = color
             textSize = sizeDp * density
             typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
@@ -211,5 +231,9 @@ class CarLyricsScreen(
         layout.draw(canvas)
         canvas.restore()
         return top + layout.height
+    }
+
+    private companion object {
+        const val ICON_DP = 32
     }
 }
