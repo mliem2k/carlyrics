@@ -28,7 +28,7 @@ Android app that displays real time synchronized lyrics for the currently playin
 
 ## Download
 
-Grab the latest nightly APK from [Releases](https://github.com/mliem2k/carlyrics/releases/latest) and sideload it (Settings, Install unknown apps). Requires Android 11+.
+Grab the latest nightly APK from [Releases](https://github.com/mliem2k/carlyrics/releases) and sideload it (Settings, Install unknown apps). Requires Android 11+.
 
 ## Building
 
