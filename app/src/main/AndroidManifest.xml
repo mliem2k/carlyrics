@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
+    <uses-permission android:name="androidx.car.app.ACCESS_SURFACE" />
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"
@@ -35,6 +37,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The Car App library reads this from the application, not from the service. -->
+        <meta-data
+            android:name="androidx.car.app.minCarApiLevel"
+            android:value="2" />
 
         <!-- Android Automotive OS launcher: renders the same CarAppService templates as Android Auto.
              Off by default so phones get no second icon; SpotifyLyricsApp turns it on in a car. -->
@@ -76,12 +83,10 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService" />
-                <!-- The library has no media or lyrics category; the host will not list a service without one. -->
-                <category android:name="androidx.car.app.category.POI" />
+                <!-- Navigation apps draw their own surface, so the host gives them the main pane and keeps
+                     the media card (Spotify and others) visible beside them. There is no lyrics category. -->
+                <category android:name="androidx.car.app.category.NAVIGATION" />
             </intent-filter>
-            <meta-data
-                android:name="androidx.car.app.minCarApiLevel"
-                android:value="1" />
         </service>
 
         <!-- Result of a self update from the system package installer -->
