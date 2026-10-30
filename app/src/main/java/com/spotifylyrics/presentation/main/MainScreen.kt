@@ -1,33 +1,64 @@
 package com.mliem.carlyrics.presentation.main
 
-import android.content.Context
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.mliem.carlyrics.BuildConfig
+import com.mliem.carlyrics.domain.model.Lyrics
 import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.presentation.update.UpdateCard
 import com.mliem.carlyrics.presentation.update.needsAttention
-import com.mliem.carlyrics.presentation.theme.SpotifyGreen
-import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val Panel = Color(0xFF1A1A1A)
+private const val PREVIEW_LINES = 6
+
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
@@ -36,58 +67,32 @@ fun MainScreen(
     onNavigateToLyricsManager: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val updateState by viewModel.updater.state.collectAsState()
     val context = LocalContext.current
 
-    var hasNotificationPermission by remember { mutableStateOf(isNotificationListenerEnabled(context)) }
+    var hasNotificationAccess by remember { mutableStateOf(isNotificationListenerEnabled(context)) }
     // The grant happens in system settings, so re-check on return.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        hasNotificationPermission = isNotificationListenerEnabled(context)
+        hasNotificationAccess = isNotificationListenerEnabled(context)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("CarLyrics", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
-                actions = {
-                    IconButton(onClick = onNavigateToLyricsManager) {
-                        Icon(
-                            imageVector = Icons.Default.LibraryMusic,
-                            contentDescription = "Lyrics Library",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = Color.White
-                        )
-                    }
-                }
-            )
-        },
-        containerColor = Color.Black,
+    Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.Black)
             .statusBarsPadding()
-    ) { paddingValues ->
+            .navigationBarsPadding()
+    ) {
+        TopBar(onNavigateToLyricsManager, onNavigateToSettings)
+
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            if (!hasNotificationPermission) {
-                PermissionWarningCard(
-                    onOpenSettings = { openNotificationSettings(context) }
-                )
-            }
-
-            val updateState by viewModel.updater.state.collectAsState()
             if (updateState.needsAttention()) {
                 UpdateCard(
                     state = updateState,
@@ -96,58 +101,22 @@ fun MainScreen(
                     onUpdate = viewModel.updater::downloadAndInstall
                 )
             }
-
-            TrackInfoCard(
-                trackInfo = uiState.currentTrack,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            val lyrics = uiState.lyrics
-            val currentTrack = uiState.currentTrack
-
-            when {
-                uiState.isLoading -> {
-                    LoadingIndicator()
-                }
-
-                lyrics != null -> {
-                    Button(
-                        onClick = onNavigateToLyrics,
-                        colors = ButtonDefaults.buttonColors(containerColor = SpotifyGreen),
-                        shape = RoundedCornerShape(50.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            Icons.Default.MusicNote,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text("Open Companion View", fontWeight = FontWeight.Bold)
-                    }
-                    LyricsCard(
-                        lyrics = lyrics.plainLyrics,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                currentTrack != null && currentTrack.isPlaying -> {
-                    EmptyLyricsCard(
-                        onFetchLyrics = { viewModel.fetchLyrics(currentTrack) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                else -> {
-                    NoTrackCard()
-                }
+            if (!hasNotificationAccess) {
+                AccessBanner(onOpenSettings = { openNotificationSettings(context) })
             }
 
-            if (uiState.error != null) {
-                Text(
-                    text = uiState.error ?: "Unknown error",
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(8.dp)
+            val track = uiState.currentTrack
+            if (track == null) {
+                NothingPlaying()
+            } else {
+                NowPlaying(track)
+                LyricsSection(
+                    lyrics = uiState.lyrics,
+                    isLoading = uiState.isLoading,
+                    hasError = uiState.error != null,
+                    onOpenLyrics = onNavigateToLyrics,
+                    onRetry = { viewModel.fetchLyrics(track) },
+                    onOpenLibrary = onNavigateToLyricsManager
                 )
             }
         }
@@ -155,188 +124,169 @@ fun MainScreen(
 }
 
 @Composable
-fun PermissionWarningCard(
-    onOpenSettings: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
-        shape = RoundedCornerShape(8.dp)
+private fun TopBar(onLibrary: () -> Unit, onSettings: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Text(
+            text = "CarLyrics",
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+            color = Color.White,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onLibrary) {
+            Icon(Icons.Default.LibraryMusic, contentDescription = "Lyrics Library", tint = Color.White)
+        }
+        IconButton(onClick = onSettings) {
+            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun NowPlaying(track: TrackInfo) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(if (track.isPlaying) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.5f))
+            )
+            Text(
+                text = if (track.isPlaying) "Playing" else "Paused",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (track.isPlaying) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.6f)
+            )
+        }
+        Text(
+            text = track.track,
+            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold),
+            color = Color.White,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = track.artist,
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+            color = Color.White.copy(alpha = 0.7f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        track.album?.takeIf { it.isNotBlank() }?.let {
+            Text(text = it, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.55f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun LyricsSection(
+    lyrics: Lyrics?,
+    isLoading: Boolean,
+    hasError: Boolean,
+    onOpenLyrics: () -> Unit,
+    onRetry: () -> Unit,
+    onOpenLibrary: () -> Unit
+) {
+    when {
+        isLoading -> PreviewSkeleton()
+        lyrics != null -> Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(
+                onClick = onOpenLyrics,
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) {
+                Text(if (lyrics.isSynced) "Open synced lyrics" else "Open lyrics", fontWeight = FontWeight.Bold, fontSize = 16.sp, letterSpacing = 0.sp)
+            }
+            Text(
+                text = lyrics.plainLyrics.lines().filter { it.isNotBlank() }.take(PREVIEW_LINES).joinToString("\n"),
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 20.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
+                color = Color.White.copy(alpha = 0.55f)
+            )
+        }
+        else -> Column(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Notification Access Required",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                text = if (hasError) "No lyrics found for this song" else "Lyrics not loaded yet",
+                style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Grant notification access to detect music",
-                style = MaterialTheme.typography.bodyMedium,
-                color = SpotifyLightGray
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onOpenSettings,
-                colors = ButtonDefaults.buttonColors(containerColor = SpotifyGreen),
-                shape = RoundedCornerShape(50.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Open Settings", fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun TrackInfoCard(
-    trackInfo: TrackInfo?,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (trackInfo == null || trackInfo.track.isEmpty()) {
+            if (hasError) {
                 Text(
-                    text = "No track playing",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = SpotifyLightGray
+                    text = "You can add them yourself by importing an .lrc file in the Lyrics Library.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.7f)
                 )
-            } else {
-                Text(
-                    text = trackInfo.track,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = trackInfo.artist,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = SpotifyLightGray,
-                    textAlign = TextAlign.Center
-                )
-                if (trackInfo.album != null) {
-                    Text(
-                        text = trackInfo.album,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF6A6A6A),
-                        textAlign = TextAlign.Center
-                    )
+                Row {
+                    TextButton(onClick = onRetry) { Text("Try again") }
+                    TextButton(onClick = onOpenLibrary) { Text("Open Library") }
                 }
+            } else {
+                TextButton(onClick = onRetry) { Text("Fetch lyrics") }
             }
         }
     }
 }
 
 @Composable
-fun LoadingIndicator() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        CircularProgressIndicator(color = SpotifyGreen)
-        Spacer(modifier = Modifier.height(16.dp))
+private fun NothingPlaying() {
+    Column(modifier = Modifier.padding(top = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Loading lyrics...",
-            style = MaterialTheme.typography.bodyMedium,
-            color = SpotifyLightGray
+            text = "Nothing playing",
+            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp, fontWeight = FontWeight.Bold),
+            color = Color.White
+        )
+        Text(
+            text = "Start a song in Spotify. The lyrics follow along here, in your status bar, and on your car screen.",
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp, lineHeight = 25.sp),
+            color = Color.White.copy(alpha = 0.7f)
         )
     }
 }
 
 @Composable
-fun LyricsCard(
-    lyrics: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
-        shape = RoundedCornerShape(8.dp)
+private fun AccessBanner(onOpenSettings: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Lyrics",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = lyrics,
-                style = MaterialTheme.typography.bodyLarge,
-                color = SpotifyLightGray
-            )
-        }
+        Text("Turn on notification access", style = MaterialTheme.typography.titleMedium, color = Color.White)
+        Text(
+            text = "CarLyrics needs it to see which song is playing.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.7f)
+        )
+        Button(
+            onClick = onOpenSettings,
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Open settings", fontWeight = FontWeight.Bold, letterSpacing = 0.sp) }
     }
 }
 
 @Composable
-fun EmptyLyricsCard(
-    onFetchLyrics: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
-        shape = RoundedCornerShape(8.dp)
+private fun PreviewSkeleton() {
+    val alpha by rememberInfiniteTransition(label = "preview").animateFloat(
+        initialValue = 0.08f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "previewAlpha"
+    )
+    Column(
+        modifier = Modifier.semantics { contentDescription = "Loading lyrics" },
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "No lyrics loaded",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onFetchLyrics,
-                colors = ButtonDefaults.buttonColors(containerColor = SpotifyGreen),
-                shape = RoundedCornerShape(50.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Fetch Lyrics", fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun NoTrackCard() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Play music in Spotify or another app to see lyrics here",
-                style = MaterialTheme.typography.bodyLarge,
-                color = SpotifyLightGray,
-                textAlign = TextAlign.Center
+        listOf(1f, 0.85f, 0.7f, 0.9f).forEach { width ->
+            Box(
+                Modifier
+                    .fillMaxWidth(width)
+                    .height(24.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White.copy(alpha = alpha))
             )
         }
     }
