@@ -1,14 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
-  <!-- Green background -->
-  <rect width="108" height="108" fill="#1DB954"/>
-
-  <!-- C shape (outer arc minus inner arc, opens right at ±50°) -->
-  <path fill="#0D0D14"
-    d="M68.14,27.15 A22,22 0 1,0 68.14,60.85 L62.36,53.96 A13,13 0 1,1 62.36,34.04 Z"/>
-
-  <!-- Lyric line 1 -->
-  <rect x="29" y="67" width="50" height="8" rx="4" fill="#0D0D14"/>
-
-  <!-- Lyric line 2 (shorter) -->
-  <rect x="29" y="80" width="36" height="8" rx="4" fill="#0D0D14"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1A1A24"/>
+      <stop offset="1" stop-color="#07070B"/>
+    </linearGradient>
+  </defs>
+  <rect width="108" height="108" rx="24" fill="url(#bg)"/>
+  <!-- Speech bubble: the words of a song -->
+  <path fill="#1DB954" d="M41,28 H67 A15,15 0 0 1 82,43 V57 A15,15 0 0 1 67,72 H56 L40,84 L41,72 A15,15 0 0 1 26,57 V43 A15,15 0 0 1 41,28 Z"/>
+  <!-- Eighth note -->
+  <g fill="#07070B">
+    <ellipse cx="49" cy="59" rx="7.5" ry="5.8" transform="rotate(-22 49 59)"/>
+    <rect x="54.5" y="37" width="4.5" height="22"/>
+    <path d="M57,37 C66,39 70,44 68,52 C66,47.5 63,46.5 57,46 Z"/>
+  </g>
 </svg>
