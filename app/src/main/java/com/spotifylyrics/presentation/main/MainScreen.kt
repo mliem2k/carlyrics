@@ -20,7 +20,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import com.mliem.carlyrics.BuildConfig
 import com.mliem.carlyrics.domain.model.TrackInfo
+import com.mliem.carlyrics.presentation.update.UpdateCard
+import com.mliem.carlyrics.presentation.update.needsAttention
 import com.mliem.carlyrics.presentation.theme.SpotifyGreen
 import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
@@ -81,6 +84,16 @@ fun MainScreen(
             if (!hasNotificationPermission) {
                 PermissionWarningCard(
                     onOpenSettings = { openNotificationSettings(context) }
+                )
+            }
+
+            val updateState by viewModel.updater.state.collectAsState()
+            if (updateState.needsAttention()) {
+                UpdateCard(
+                    state = updateState,
+                    currentVersion = BuildConfig.VERSION_NAME,
+                    onCheck = viewModel.updater::check,
+                    onUpdate = viewModel.updater::downloadAndInstall
                 )
             }
 

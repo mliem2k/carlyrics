@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mliem.carlyrics.BuildConfig
 import com.mliem.carlyrics.presentation.theme.SpotifyGreen
+import com.mliem.carlyrics.presentation.update.UpdateCard
 import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +75,18 @@ fun SettingsScreen(
                     description = "Plain lyrics fallback via Musixmatch",
                     checked = uiState.musixmatchEnabled,
                     onCheckedChange = { viewModel.toggleMusixmatch(it) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            SettingsSection(title = "App") {
+                val updateState by viewModel.updater.state.collectAsState()
+                UpdateCard(
+                    state = updateState,
+                    currentVersion = BuildConfig.VERSION_NAME,
+                    onCheck = viewModel.updater::check,
+                    onUpdate = viewModel.updater::downloadAndInstall
                 )
             }
 
