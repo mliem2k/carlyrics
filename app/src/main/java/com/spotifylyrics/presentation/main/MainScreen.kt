@@ -1,5 +1,7 @@
 package com.mliem.carlyrics.presentation.main
 
+import android.graphics.Bitmap
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -10,6 +12,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +44,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +61,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -76,8 +84,12 @@ import com.mliem.carlyrics.presentation.companion.CompanionLyricsViewModel
 import com.mliem.carlyrics.presentation.companion.LyricLine
 import com.mliem.carlyrics.presentation.update.UpdateCard
 import com.mliem.carlyrics.presentation.update.needsAttention
+import kotlinx.coroutines.flow.StateFlow
 
 private const val ANIM_MS = 220
+
+// Dark enough that dim lyric lines stay readable over the brightest artwork.
+private const val ARTWORK_SCRIM = 0.7f
 
 // Dim levels keep large bold text above 3:1 against black.
 private const val ALPHA_UPCOMING = 0.55f
@@ -126,10 +138,11 @@ fun MainScreen(
 
     val track = uiState.currentTrack
 
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    ArtworkBackdrop(viewModel.artwork)
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
@@ -190,12 +203,41 @@ fun MainScreen(
         }
 
         if (track != null) {
+            SeekBar(
+                positionMs = viewModel.playbackPositionMs,
+                durationMs = viewModel.durationMs,
+                onSeek = viewModel::seekTo
+            )
             PlaybackControls(
                 isPlaying = isPlaying,
                 onPlayPause = viewModel::togglePlayPause,
                 onSkipPrevious = viewModel::skipPrevious,
                 onSkipNext = viewModel::skipNext
             )
+        }
+    }
+    }
+}
+
+/**
+ * The cover art, stretched and softened behind everything, under a dark layer that keeps the lyrics
+ * readable on any artwork. The art is already a tiny image, so scaling it up gives the blur for free.
+ */
+@Composable
+private fun ArtworkBackdrop(artwork: StateFlow<Bitmap?>) {
+    val bitmap by artwork.collectAsState()
+    Crossfade(targetState = bitmap, animationSpec = tween(500), label = "artwork") { art ->
+        if (art != null) {
+            Box(Modifier.fillMaxSize()) {
+                Image(
+                    bitmap = art.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    filterQuality = FilterQuality.Medium,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = ARTWORK_SCRIM)))
+            }
         }
     }
 }
@@ -408,6 +450,46 @@ private fun AccessBanner(onOpenSettings: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black),
             modifier = Modifier.fillMaxWidth()
         ) { Text("Open settings", fontWeight = FontWeight.Bold) }
+    }
+}
+
+/**
+ * Progress through the song with elapsed and total time. Collecting the position here keeps its
+ * quarter second updates from redrawing the whole screen. Hidden when the player reports no length.
+ */
+@Composable
+private fun SeekBar(
+    positionMs: StateFlow<Long>,
+    durationMs: StateFlow<Long>,
+    onSeek: (Long) -> Unit
+) {
+    val position by positionMs.collectAsState()
+    val duration by durationMs.collectAsState()
+    if (duration <= 0L) return
+
+    // While a finger is on the bar it shows the finger, not the player.
+    var dragFraction by remember { mutableStateOf<Float?>(null) }
+    val fraction = dragFraction ?: (position.toFloat() / duration).coerceIn(0f, 1f)
+
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+        Slider(
+            value = fraction,
+            onValueChange = { dragFraction = it },
+            onValueChangeFinished = {
+                dragFraction?.let { onSeek((it * duration).toLong()) }
+                dragFraction = null
+            },
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = Color.White,
+                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+            ),
+            modifier = Modifier.semantics { contentDescription = "Song position" }
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(formatTime((fraction * duration).toLong()), style = MaterialTheme.typography.bodySmall, color = Muted)
+            Text(formatTime(duration), style = MaterialTheme.typography.bodySmall, color = Muted)
+        }
     }
 }
 

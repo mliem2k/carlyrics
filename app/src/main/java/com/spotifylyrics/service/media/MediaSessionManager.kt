@@ -2,6 +2,7 @@ package com.mliem.carlyrics.service.media
 
 import android.content.ComponentName
 import android.content.Context
+import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.PlaybackState
@@ -41,6 +42,15 @@ class MediaSessionManager @Inject constructor(
 
     private val _playbackPositionFlow = MutableStateFlow(0L)
     val playbackPositionFlow: StateFlow<Long> = _playbackPositionFlow.asStateFlow()
+
+    /** Cover art shrunk to a tiny image: enough for a blurred backdrop, cheap to keep and draw. */
+    private val _artwork = MutableStateFlow<Bitmap?>(null)
+    val artwork: StateFlow<Bitmap?> = _artwork.asStateFlow()
+    private var artworkTrackKey = ""
+
+    /** Length of the current track, or 0 when the player does not report one. */
+    private val _durationMs = MutableStateFlow(0L)
+    val durationMs: StateFlow<Long> = _durationMs.asStateFlow()
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -146,6 +156,16 @@ class MediaSessionManager @Inject constructor(
         publish()
     }
 
+    // ponytail: only embedded bitmaps; players that publish art as a content or web URI show no backdrop.
+    private fun updateArtwork(metadata: MediaMetadata, trackKey: String) {
+        // Every pause or resume republishes the same track; decode again only for a new one or late art.
+        if (trackKey == artworkTrackKey && _artwork.value != null) return
+        val art = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+            ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
+        artworkTrackKey = trackKey
+        _artwork.value = art?.let { Bitmap.createScaledBitmap(it, ARTWORK_SIZE_PX, ARTWORK_SIZE_PX, true) }
+    }
+
     /** Playing session wins, then Spotify, then whatever is first. */
     private fun activeController(): MediaController? =
         controllers.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
@@ -166,6 +186,9 @@ class MediaSessionManager @Inject constructor(
             _currentTrackFlow.value = null
             _isPlaying.value = false
             _playbackPositionFlow.value = 0L
+            _durationMs.value = 0L
+            _artwork.value = null
+            artworkTrackKey = ""
             return
         }
 
@@ -184,11 +207,14 @@ class MediaSessionManager @Inject constructor(
             isPlaying = playing
         )
         _isPlaying.value = playing
+        _durationMs.value = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION).coerceAtLeast(0L)
+        updateArtwork(metadata, "$title|$artist")
         _playbackPositionFlow.value = anchor.estimateAt(SystemClock.elapsedRealtime())
     }
 
     companion object {
         private const val TAG = "MediaSessionManager"
+        private const val ARTWORK_SIZE_PX = 32
         private const val TICK_MS = 250L
         private const val RETRY_MS = 2_000L
         private val SPOTIFY_PACKAGES = setOf("com.spotify.music", "com.spotify.lite")

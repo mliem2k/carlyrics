@@ -31,6 +31,8 @@ class CompanionLyricsViewModel @Inject constructor(
     val uiState: StateFlow<CompanionUiState> = _uiState.asStateFlow()
     
     val isPlaying: StateFlow<Boolean> = mediaSessionManager.isPlaying
+    val durationMs: StateFlow<Long> = mediaSessionManager.durationMs
+    val artwork = mediaSessionManager.artwork
 
     private val _currentLyricIndex = MutableStateFlow(0)
     val currentLyricIndex: StateFlow<Int> = _currentLyricIndex.asStateFlow()
