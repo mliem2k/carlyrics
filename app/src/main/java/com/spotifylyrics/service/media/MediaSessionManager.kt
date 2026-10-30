@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.MediaController
+import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
@@ -43,10 +44,18 @@ class MediaSessionManager @Inject constructor(
     private val _playbackPositionFlow = MutableStateFlow(0L)
     val playbackPositionFlow: StateFlow<Long> = _playbackPositionFlow.asStateFlow()
 
-    /** Cover art shrunk to a tiny image: enough for a blurred backdrop, cheap to keep and draw. */
-    private val _artwork = MutableStateFlow<Bitmap?>(null)
-    val artwork: StateFlow<Bitmap?> = _artwork.asStateFlow()
+    /** The cover's two main colors, for the backdrop. Null when the player shares no cover. */
+    private val _artworkPalette = MutableStateFlow<ArtworkPalette?>(null)
+    val artworkPalette: StateFlow<ArtworkPalette?> = _artworkPalette.asStateFlow()
     private var artworkTrackKey = ""
+
+    /** The player's play queue, empty when the player does not publish one. */
+    private val _queue = MutableStateFlow<List<QueueEntry>>(emptyList())
+    val queue: StateFlow<List<QueueEntry>> = _queue.asStateFlow()
+
+    /** Queue id of the entry that is playing, or -1. */
+    private val _activeQueueId = MutableStateFlow(-1L)
+    val activeQueueId: StateFlow<Long> = _activeQueueId.asStateFlow()
 
     /** Length of the current track, or 0 when the player does not report one. */
     private val _durationMs = MutableStateFlow(0L)
@@ -65,6 +74,7 @@ class MediaSessionManager @Inject constructor(
     private val controllerCallback = object : MediaController.Callback() {
         override fun onMetadataChanged(metadata: MediaMetadata?) = publish()
         override fun onPlaybackStateChanged(state: PlaybackState?) = publish()
+        override fun onQueueChanged(queue: MutableList<MediaSession.QueueItem>?) = publish()
         override fun onSessionDestroyed() = publish()
     }
 
@@ -128,6 +138,10 @@ class MediaSessionManager @Inject constructor(
         activeController()?.transportControls?.skipToPrevious()
     }
 
+    fun skipToQueueItem(id: Long) {
+        activeController()?.transportControls?.skipToQueueItem(id)
+    }
+
     fun seekTo(positionMs: Long) {
         activeController()?.transportControls?.seekTo(positionMs) ?: return
         // Show the jump now; the session's own state update confirms it right after.
@@ -156,14 +170,20 @@ class MediaSessionManager @Inject constructor(
         publish()
     }
 
-    // ponytail: only embedded bitmaps; players that publish art as a content or web URI show no backdrop.
+    // ponytail: only embedded bitmaps; players that publish art as a content or web URI give no colors.
     private fun updateArtwork(metadata: MediaMetadata, trackKey: String) {
-        // Every pause or resume republishes the same track; decode again only for a new one or late art.
-        if (trackKey == artworkTrackKey && _artwork.value != null) return
+        // Every pause or resume republishes the same track; read the cover again only for a new one or late art.
+        if (trackKey == artworkTrackKey && _artworkPalette.value != null) return
         val art = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
         artworkTrackKey = trackKey
-        _artwork.value = art?.let { Bitmap.createScaledBitmap(it, ARTWORK_SIZE_PX, ARTWORK_SIZE_PX, true) }
+        _artworkPalette.value = art?.let {
+            // Colors only need a thumbnail; the full cover never has to be kept.
+            val thumbnail = Bitmap.createScaledBitmap(it, ARTWORK_SIZE_PX, ARTWORK_SIZE_PX, true)
+            val pixels = IntArray(ARTWORK_SIZE_PX * ARTWORK_SIZE_PX)
+            thumbnail.getPixels(pixels, 0, ARTWORK_SIZE_PX, 0, 0, ARTWORK_SIZE_PX, ARTWORK_SIZE_PX)
+            extractPalette(pixels)
+        }
     }
 
     /** Playing session wins, then Spotify, then whatever is first. */
@@ -187,7 +207,9 @@ class MediaSessionManager @Inject constructor(
             _isPlaying.value = false
             _playbackPositionFlow.value = 0L
             _durationMs.value = 0L
-            _artwork.value = null
+            _artworkPalette.value = null
+            _queue.value = emptyList()
+            _activeQueueId.value = -1L
             artworkTrackKey = ""
             return
         }
@@ -209,6 +231,14 @@ class MediaSessionManager @Inject constructor(
         _isPlaying.value = playing
         _durationMs.value = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION).coerceAtLeast(0L)
         updateArtwork(metadata, "$title|$artist")
+        _queue.value = controller.queue.orEmpty().map { item ->
+            QueueEntry(
+                id = item.queueId,
+                title = item.description.title?.toString().orEmpty(),
+                subtitle = item.description.subtitle?.toString()
+            )
+        }
+        _activeQueueId.value = state?.activeQueueItemId ?: -1L
         _playbackPositionFlow.value = anchor.estimateAt(SystemClock.elapsedRealtime())
     }
 
@@ -264,3 +294,6 @@ internal val MUSIC_PACKAGES = setOf(
     "com.aspiro.tidal",
     "com.qobuz.music"
 )
+
+/** One song in the player's queue. [id] is what the player expects back to jump to it. */
+data class QueueEntry(val id: Long, val title: String, val subtitle: String?)

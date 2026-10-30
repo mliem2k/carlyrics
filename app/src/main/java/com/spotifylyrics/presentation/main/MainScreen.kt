@@ -1,7 +1,5 @@
 package com.mliem.carlyrics.presentation.main
 
-import android.graphics.Bitmap
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -12,7 +10,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,11 +25,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -43,7 +42,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -60,10 +61,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -83,13 +84,15 @@ import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.presentation.companion.CompanionLyricsViewModel
 import com.mliem.carlyrics.presentation.companion.LyricLine
 import com.mliem.carlyrics.presentation.update.UpdateCard
+import com.mliem.carlyrics.service.media.ArtworkPalette
+import com.mliem.carlyrics.service.media.QueueEntry
+import com.mliem.carlyrics.service.media.backdropColor
 import com.mliem.carlyrics.presentation.update.needsAttention
 import kotlinx.coroutines.flow.StateFlow
 
 private const val ANIM_MS = 220
 
-// Dark enough that dim lyric lines stay readable over the brightest artwork.
-private const val ARTWORK_SCRIM = 0.7f
+private const val GLOW_ALPHA = 0.8f
 
 // Dim levels keep large bold text above 3:1 against black.
 private const val ALPHA_UPCOMING = 0.55f
@@ -137,9 +140,12 @@ fun MainScreen(
     }
 
     val track = uiState.currentTrack
+    val queue by viewModel.queue.collectAsState()
+    val activeQueueId by viewModel.activeQueueId.collectAsState()
+    var showQueue by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-    ArtworkBackdrop(viewModel.artwork)
+    ArtworkBackdrop(viewModel.artworkPalette)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -208,35 +214,105 @@ fun MainScreen(
                 durationMs = viewModel.durationMs,
                 onSeek = viewModel::seekTo
             )
-            PlaybackControls(
-                isPlaying = isPlaying,
-                onPlayPause = viewModel::togglePlayPause,
-                onSkipPrevious = viewModel::skipPrevious,
-                onSkipNext = viewModel::skipNext
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                PlaybackControls(
+                    isPlaying = isPlaying,
+                    onPlayPause = viewModel::togglePlayPause,
+                    onSkipPrevious = viewModel::skipPrevious,
+                    onSkipNext = viewModel::skipNext
+                )
+                // Only players that publish a queue get the button.
+                if (queue.size > 1) {
+                    IconButton(
+                        onClick = { showQueue = true },
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = "Queue", tint = Color.White)
+                    }
+                }
+            }
         }
     }
+    }
+
+    if (showQueue) {
+        QueueSheet(
+            queue = queue,
+            activeId = activeQueueId,
+            onSelect = {
+                viewModel.skipToQueueItem(it)
+                showQueue = false
+            },
+            onDismiss = { showQueue = false }
+        )
     }
 }
 
 /**
- * The cover art, stretched and softened behind everything, under a dark layer that keeps the lyrics
- * readable on any artwork. The art is already a tiny image, so scaling it up gives the blur for free.
+ * A smooth gradient painted from the cover's colors: the main color fading to black from the top, with a
+ * soft glow of the second color in the corner. Colors, not the picture, so there is no resolution to run
+ * out of and nothing to pixelate, and the colors are pre-darkened so the lyrics stay readable.
  */
 @Composable
-private fun ArtworkBackdrop(artwork: StateFlow<Bitmap?>) {
-    val bitmap by artwork.collectAsState()
-    Crossfade(targetState = bitmap, animationSpec = tween(500), label = "artwork") { art ->
-        if (art != null) {
-            Box(Modifier.fillMaxSize()) {
-                Image(
-                    bitmap = art.asImageBitmap(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    filterQuality = FilterQuality.Medium,
-                    modifier = Modifier.fillMaxSize()
+private fun ArtworkBackdrop(palette: StateFlow<ArtworkPalette?>) {
+    val colors by palette.collectAsState()
+    val spec = tween<Color>(durationMillis = 600)
+    val base by animateColorAsState(colors?.let { Color(backdropColor(it.primary)) } ?: Color.Black, spec, label = "backdropBase")
+    val glow by animateColorAsState(colors?.let { Color(backdropColor(it.secondary)) } ?: Color.Black, spec, label = "backdropGlow")
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(base, Color.Black)))
+            .drawBehind {
+                drawRect(
+                    Brush.radialGradient(
+                        colors = listOf(glow.copy(alpha = GLOW_ALPHA), Color.Transparent),
+                        center = Offset(size.width * 0.9f, size.height * 0.12f),
+                        radius = size.maxDimension * 0.6f
+                    )
                 )
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = ARTWORK_SCRIM)))
+            }
+    )
+}
+
+/** The player's queue. The playing song is marked; tapping another one skips to it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QueueSheet(queue: List<QueueEntry>, activeId: Long, onSelect: (Long) -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Panel) {
+        Text(
+            text = "Queue",
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+        LazyColumn(modifier = Modifier.navigationBarsPadding()) {
+            items(queue, key = { it.id }) { entry ->
+                val playing = entry.id == activeId
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(entry.id) }
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = entry.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (playing) MaterialTheme.colorScheme.primary else Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        entry.subtitle?.takeIf { it.isNotBlank() }?.let {
+                            Text(text = it, style = MaterialTheme.typography.bodyMedium, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                    if (playing) {
+                        Text("Playing", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
             }
         }
     }
