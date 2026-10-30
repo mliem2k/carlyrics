@@ -3,6 +3,7 @@ package com.mliem.carlyrics.presentation.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mliem.carlyrics.domain.usecase.ClearCacheUseCase
+import com.mliem.carlyrics.domain.repository.LyricsRepository
 import com.mliem.carlyrics.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,6 +20,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val clearCacheUseCase: ClearCacheUseCase,
+    lyricsRepository: LyricsRepository,
     val updater: com.mliem.carlyrics.data.update.AppUpdater
 ) : ViewModel() {
 
@@ -26,6 +29,8 @@ class SettingsViewModel @Inject constructor(
 
     private val _messages = Channel<String>(Channel.CONFLATED)
     val messages = _messages.receiveAsFlow()
+
+    private val savedSongs = lyricsRepository.getAllCachedLyrics().map { it.size }
 
     init {
         loadSettings()
@@ -37,13 +42,15 @@ class SettingsViewModel @Inject constructor(
                 settingsRepository.isLrclibEnabled(),
                 settingsRepository.isGeniusEnabled(),
                 settingsRepository.isMusixmatchEnabled(),
-                settingsRepository.isAutoFetchEnabled()
-            ) { lrclib, genius, musixmatch, autoFetch ->
+                settingsRepository.isAutoFetchEnabled(),
+                savedSongs
+            ) { lrclib, genius, musixmatch, autoFetch, saved ->
                 SettingsUiState(
                     lrclibEnabled = lrclib,
                     geniusEnabled = genius,
                     musixmatchEnabled = musixmatch,
-                    autoFetchEnabled = autoFetch
+                    autoFetchEnabled = autoFetch,
+                    savedSongs = saved
                 )
             }.collect { _uiState.value = it }
         }
@@ -68,7 +75,7 @@ class SettingsViewModel @Inject constructor(
     fun clearCache() {
         viewModelScope.launch {
             clearCacheUseCase()
-            _messages.send("Cache cleared")
+            _messages.send("Saved lyrics cleared")
         }
     }
 }
@@ -77,5 +84,6 @@ data class SettingsUiState(
     val lrclibEnabled: Boolean = true,
     val geniusEnabled: Boolean = true,
     val musixmatchEnabled: Boolean = true,
-    val autoFetchEnabled: Boolean = true
+    val autoFetchEnabled: Boolean = true,
+    val savedSongs: Int = 0
 )

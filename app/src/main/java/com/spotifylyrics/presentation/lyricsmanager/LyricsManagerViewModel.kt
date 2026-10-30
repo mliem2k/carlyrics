@@ -63,7 +63,7 @@ class LyricsManagerViewModel @Inject constructor(
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(
                         isImporting = false,
-                        importResult = "Imported: ${artist.trim()} – ${track.trim()}"
+                        importResult = "Imported ${track.trim()}"
                     )
                 }
                 .onFailure { e ->
@@ -72,6 +72,20 @@ class LyricsManagerViewModel @Inject constructor(
                         importResult = "Error: ${e.message}"
                     )
                 }
+        }
+    }
+
+    fun delete(lyrics: Lyrics) {
+        viewModelScope.launch {
+            lyricsRepository.deleteLyrics(lyrics.track, lyrics.artist)
+            _uiState.value = _uiState.value.copy(importResult = "Deleted ${lyrics.track}")
+        }
+    }
+
+    /** Builds the .lrc text for a saved song (timestamps kept when it has them) for sharing. */
+    fun exportLrc(lyrics: Lyrics, onReady: (String) -> Unit) {
+        viewModelScope.launch {
+            lyricsRepository.exportToLrc(lyrics).onSuccess(onReady)
         }
     }
 
