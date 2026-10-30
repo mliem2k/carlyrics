@@ -147,8 +147,8 @@ class CarLyricsScreen(
 
         var y = area.top + pad
         track?.let {
-            y = drawText(canvas, it.track, left, y, contentWidth, 20f, Color.WHITE, bold = true, maxLines = 1)
-            y = drawText(canvas, it.artist, left, y, contentWidth, 15f, Color.argb(178, 255, 255, 255), maxLines = 1)
+            y = drawText(canvas, it.track, left, y, contentWidth, 30f, Color.WHITE, bold = true, maxLines = 1)
+            y = drawText(canvas, it.artist, left, y, contentWidth, 22f, Color.argb(178, 255, 255, 255), maxLines = 1)
         }
         y += 12 * density
 
@@ -167,7 +167,7 @@ class CarLyricsScreen(
         var index = (current - 1).coerceAtLeast(0)
         while (index < lines.size && y < bottom) {
             val isCurrent = index == current
-            val size = if (isCurrent) 30f else 22f
+            val size = if (isCurrent) 46f else 32f
             val alpha = when {
                 isCurrent -> 255
                 index < current -> 97
@@ -180,8 +180,8 @@ class CarLyricsScreen(
     }
 
     private fun message(canvas: Canvas, title: String, detail: String, left: Float, top: Float, contentWidth: Int) {
-        val afterTitle = drawText(canvas, title, left, top + 24 * density, contentWidth, 28f, Color.WHITE, bold = true)
-        drawText(canvas, detail, left, afterTitle + 8 * density, contentWidth, 18f, Color.argb(178, 255, 255, 255))
+        val afterTitle = drawText(canvas, title, left, top + 24 * density, contentWidth, 38f, Color.WHITE, bold = true)
+        drawText(canvas, detail, left, afterTitle + 8 * density, contentWidth, 26f, Color.argb(178, 255, 255, 255))
     }
 
     /** Draws wrapped text with its top at [top] and returns the y just under it. */
