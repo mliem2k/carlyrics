@@ -32,7 +32,9 @@ class CompanionLyricsViewModel @Inject constructor(
     
     val isPlaying: StateFlow<Boolean> = mediaSessionManager.isPlaying
     val durationMs: StateFlow<Long> = mediaSessionManager.durationMs
-    val artwork = mediaSessionManager.artwork
+    val artworkPalette = mediaSessionManager.artworkPalette
+    val queue = mediaSessionManager.queue
+    val activeQueueId = mediaSessionManager.activeQueueId
 
     private val _currentLyricIndex = MutableStateFlow(0)
     val currentLyricIndex: StateFlow<Int> = _currentLyricIndex.asStateFlow()
@@ -148,6 +150,10 @@ class CompanionLyricsViewModel @Inject constructor(
         mediaSessionManager.skipToPrevious()
     }
     
+    fun skipToQueueItem(id: Long) {
+        mediaSessionManager.skipToQueueItem(id)
+    }
+
     fun seekTo(positionMs: Long) {
         mediaSessionManager.seekTo(positionMs)
     }
