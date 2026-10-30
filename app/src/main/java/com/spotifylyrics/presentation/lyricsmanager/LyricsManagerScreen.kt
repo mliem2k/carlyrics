@@ -23,8 +23,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -52,13 +50,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mliem.carlyrics.domain.model.Lyrics
-import com.mliem.carlyrics.presentation.theme.SpotifyGreen
-import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
-private val DarkSurface = Color(0xFF282828)
-private val DarkBg = Color(0xFF121212)
+private val Panel = Color(0xFF1A1A1A)
+private val Muted = Color.White.copy(alpha = 0.7f)
 
 // Generous cap for a plain-text LRC file; guards against OutOfMemoryError if
 // the user picks a large non-text file through the "*/*" picker.
@@ -113,7 +111,7 @@ fun LyricsManagerScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Lyrics Library", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Lyrics Library", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -121,7 +119,7 @@ fun LyricsManagerScreen(
                 },
                 actions = {
                     IconButton(onClick = { viewModel.clearAllCache() }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Clear all", tint = SpotifyLightGray)
+                        Icon(Icons.Default.Delete, contentDescription = "Clear all", tint = Muted)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
@@ -130,19 +128,19 @@ fun LyricsManagerScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { filePicker.launch("*/*") },
-                containerColor = SpotifyGreen,
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.Black
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Import LRC")
             }
         },
-        containerColor = DarkBg
+        containerColor = Color.Black
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
         ) {
             Spacer(Modifier.height(12.dp))
 
@@ -150,49 +148,54 @@ fun LyricsManagerScreen(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search cached lyrics…", color = SpotifyLightGray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = SpotifyLightGray) },
+                placeholder = { Text("Search saved lyrics", color = Muted) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Muted) },
                 trailingIcon = {
                     if (uiState.searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = SpotifyLightGray)
+                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Muted)
                         }
                     }
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
-                    focusedBorderColor = SpotifyGreen,
-                    unfocusedBorderColor = DarkSurface,
-                    focusedContainerColor = DarkSurface,
-                    unfocusedContainerColor = DarkSurface
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedContainerColor = Panel,
+                    unfocusedContainerColor = Panel
                 )
             )
 
             Spacer(Modifier.height(12.dp))
 
             if (uiState.lyrics.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(modifier = Modifier.padding(top = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = if (uiState.searchQuery.isBlank()) "No cached lyrics yet.\nTap + to import an LRC file."
-                               else "No results for \"${uiState.searchQuery}\"",
-                        color = SpotifyLightGray,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = if (uiState.searchQuery.isBlank()) "No saved lyrics yet" else "No results",
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+                        color = Color.White
+                    )
+                    Text(
+                        text = if (uiState.searchQuery.isBlank()) "Lyrics you play are saved here. Tap + to add your own from an .lrc file."
+                               else "Nothing matches \"${uiState.searchQuery}\".",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Muted
                     )
                 }
             } else {
                 Text(
-                    text = "${uiState.lyrics.size} cached",
-                    color = SpotifyLightGray,
-                    style = MaterialTheme.typography.labelMedium,
+                    text = if (uiState.lyrics.size == 1) "1 saved song" else "${uiState.lyrics.size} saved songs",
+                    color = Muted,
+                    style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     items(uiState.lyrics, key = { "${it.artist}|${it.track}" }) { lyrics ->
-                        CachedLyricsCard(lyrics = lyrics)
+                        CachedLyricsRow(lyrics = lyrics)
                     }
                     item { Spacer(Modifier.height(80.dp)) }
                 }
@@ -217,44 +220,33 @@ fun LyricsManagerScreen(
 }
 
 @Composable
-private fun CachedLyricsCard(lyrics: Lyrics) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(10.dp)
+private fun CachedLyricsRow(lyrics: Lyrics) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = lyrics.track,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1
-                )
-                Text(
-                    text = lyrics.artist,
-                    color = SpotifyLightGray,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1
-                )
-                if (lyrics.isSynced) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "● synced",
-                        color = SpotifyGreen,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-            Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                text = "${lyrics.plainLyrics.lines().size} lines",
-                color = SpotifyLightGray,
-                style = MaterialTheme.typography.labelSmall
+                text = lyrics.track,
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = lyrics.artist,
+                color = Muted,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (lyrics.isSynced) {
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "Synced",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
@@ -271,13 +263,13 @@ private fun ImportLrcDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = DarkSurface,
+        containerColor = Panel,
         title = { Text("Import LRC File", color = Color.White, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "File loaded (${lrcContent.lines().size} lines). Enter the track details:",
-                    color = SpotifyLightGray,
+                    color = Muted,
                     style = MaterialTheme.typography.bodySmall
                 )
                 OutlinedTextField(
@@ -301,12 +293,12 @@ private fun ImportLrcDialog(
                 onClick = { onConfirm(track, artist) },
                 enabled = track.isNotBlank() && artist.isNotBlank()
             ) {
-                Text("Import", color = SpotifyGreen, fontWeight = FontWeight.Bold)
+                Text("Import", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SpotifyLightGray)
+                Text("Cancel", color = Muted)
             }
         }
     )
@@ -316,9 +308,9 @@ private fun ImportLrcDialog(
 private fun dialogFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedTextColor = Color.White,
     unfocusedTextColor = Color.White,
-    focusedBorderColor = SpotifyGreen,
-    unfocusedBorderColor = SpotifyLightGray,
-    focusedLabelColor = SpotifyGreen,
-    unfocusedLabelColor = SpotifyLightGray,
-    cursorColor = SpotifyGreen
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = Muted,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = Muted,
+    cursorColor = MaterialTheme.colorScheme.primary
 )

@@ -1,20 +1,43 @@
 package com.mliem.carlyrics.presentation.settings
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mliem.carlyrics.BuildConfig
-import com.mliem.carlyrics.presentation.theme.SpotifyGreen
 import com.mliem.carlyrics.presentation.update.UpdateCard
-import com.mliem.carlyrics.presentation.theme.SpotifyLightGray
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,6 +46,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val updateState by viewModel.updater.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -34,14 +58,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", color = Color.White) },
+                title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
@@ -55,9 +75,11 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            SettingsSection(title = "Lyrics Sources") {
+            SettingsSection(title = "Lyrics sources") {
                 SwitchSetting(
                     title = "LRCLIB (synced)",
                     description = "Free synced lyrics, tried first for timestamped lines",
@@ -78,10 +100,7 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
             SettingsSection(title = "App") {
-                val updateState by viewModel.updater.state.collectAsState()
                 UpdateCard(
                     state = updateState,
                     currentVersion = BuildConfig.VERSION_NAME,
@@ -90,54 +109,37 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            SettingsSection(title = "Cache") {
+            SettingsSection(title = "Lyrics cache") {
                 SwitchSetting(
-                    title = "Auto-fetch Lyrics",
-                    description = "Automatically fetch lyrics when track changes",
+                    title = "Fetch lyrics automatically",
+                    description = "Look up lyrics as soon as a new song starts",
                     checked = uiState.autoFetchEnabled,
                     onCheckedChange = { viewModel.toggleAutoFetch(it) }
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
+                OutlinedButton(
                     onClick = { viewModel.clearCache() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF282828)),
-                    shape = RoundedCornerShape(50.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 ) {
-                    Text("Clear Cache", color = Color.White)
+                    Text("Clear cache", color = Color.White)
                 }
             }
         }
     }
 }
 
+/** A titled group of rows. No card: the spacing and the title carry the grouping. */
 @Composable
 fun SettingsSection(
     title: String,
     content: @Composable () -> Unit
 ) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = SpotifyLightGray,
-            modifier = Modifier.padding(bottom = 12.dp)
+            style = MaterialTheme.typography.titleSmall,
+            color = Color.White.copy(alpha = 0.7f)
         )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF282828)),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                content()
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
+        content()
     }
 }
 
@@ -149,22 +151,19 @@ fun SwitchSetting(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = SpotifyLightGray
+                color = Color.White.copy(alpha = 0.7f)
             )
         }
         Spacer(modifier = Modifier.width(16.dp))
@@ -172,10 +171,11 @@ fun SwitchSetting(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = SpotifyGreen,
-                uncheckedThumbColor = Color.Gray,
-                uncheckedTrackColor = Color.Gray.copy(alpha = 0.5f)
+                checkedThumbColor = Color.Black,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = Color.White.copy(alpha = 0.7f),
+                uncheckedTrackColor = Color.White.copy(alpha = 0.15f),
+                uncheckedBorderColor = Color.White.copy(alpha = 0.3f)
             )
         )
     }
