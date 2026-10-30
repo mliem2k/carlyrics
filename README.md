@@ -1,6 +1,6 @@
 # CarLyrics
 
-<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="96" alt="CarLyrics icon" />
+<img src="landing/public/favicon.svg" width="96" alt="CarLyrics icon" />
 
 Android app that displays real time synchronized lyrics for the currently playing track, with full Android Auto support.
 

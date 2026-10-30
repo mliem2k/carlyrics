@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon (Android 13+): only the alpha is used, so the bubble becomes an outline and the note stays solid. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:fillColor="#00000000"
+      android:strokeColor="#FFFFFFFF"
+      android:strokeWidth="4"
+      android:strokeLineJoin="round"
+      android:pathData="M41,28 H67 A15,15 0 0 1 82,43 V57 A15,15 0 0 1 67,72 H56 L40,84 L41,72 A15,15 0 0 1 26,57 V43 A15,15 0 0 1 41,28 Z"/>
+  <group android:pivotX="49" android:pivotY="59" android:rotation="-22">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M41.5,59 a7.5,5.8 0 1,0 15,0 a7.5,5.8 0 1,0 -15,0 Z"/>
+  </group>
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M54.5,37 h4.5 v22 h-4.5 Z"/>
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M57,37 C66,39 70,44 68,52 C66,47.5 63,46.5 57,46 Z"/>
+</vector>
