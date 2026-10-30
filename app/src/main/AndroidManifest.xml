@@ -36,10 +36,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Android Automotive OS launcher: renders the same CarAppService templates as Android Auto -->
+        <!-- Android Automotive OS launcher: renders the same CarAppService templates as Android Auto.
+             Off by default so phones get no second icon; SpotifyLyricsApp turns it on in a car. -->
         <activity
             android:name="androidx.car.app.activity.CarAppActivity"
-            android:enabled="@bool/is_car_screen"
+            android:enabled="false"
             android:exported="true"
             android:label="@string/app_name"
             android:launchMode="singleTask"

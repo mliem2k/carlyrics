@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Overridden to true in values-car so the car launcher entry exists only on a car screen. -->
-    <bool name="is_car_screen">false</bool>
-</resources>
