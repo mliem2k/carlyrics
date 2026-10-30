@@ -100,6 +100,10 @@ class LyricsRepositoryImpl @Inject constructor(
         lyricsDao.clearAllLyrics()
     }
 
+    override suspend fun deleteLyrics(track: String, artist: String) {
+        lyricsDao.deleteLyrics(track, artist)
+    }
+
     override suspend fun clearExpiredCache() {
         lyricsDao.deleteExpiredLyrics()
     }

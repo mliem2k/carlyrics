@@ -7,10 +7,6 @@ import kotlinx.coroutines.flow.Flow
  * Repository interface for track operations
  */
 interface TrackRepository {
-    /**
-     * Get current track info from notification listener
-     */
-    fun getCurrentTrackInfo(): Flow<TrackInfo?>
 
     /**
      * Get recent track history

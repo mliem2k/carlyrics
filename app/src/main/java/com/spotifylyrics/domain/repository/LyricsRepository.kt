@@ -29,6 +29,11 @@ interface LyricsRepository {
     suspend fun clearCache()
 
     /**
+     * Remove one song from the cache
+     */
+    suspend fun deleteLyrics(track: String, artist: String)
+
+    /**
      * Clear expired cached lyrics
      */
     suspend fun clearExpiredCache()

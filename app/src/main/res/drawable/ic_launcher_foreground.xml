@@ -5,19 +5,21 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-  <!-- C shape: outer arc minus inner arc, opening right at ±50° -->
+  <!-- Speech bubble: the words of a song. Kept inside the central 66dp the launcher mask never crops. -->
   <path
-      android:fillColor="#0D0D14"
-      android:pathData="M68.14,27.15 A22,22 0 1,0 68.14,60.85 L62.36,53.96 A13,13 0 1,1 62.36,34.04 Z"/>
+      android:fillColor="#1DB954"
+      android:pathData="M41,28 H67 A15,15 0 0 1 82,43 V57 A15,15 0 0 1 67,72 H56 L40,84 L41,72 A15,15 0 0 1 26,57 V43 A15,15 0 0 1 41,28 Z"/>
 
-  <!-- Lyric line 1 (full width) -->
+  <!-- Eighth note: head, stem and flag overlap so there is no seam. -->
+  <group android:pivotX="49" android:pivotY="59" android:rotation="-22">
+    <path
+        android:fillColor="#07070B"
+        android:pathData="M41.5,59 a7.5,5.8 0 1,0 15,0 a7.5,5.8 0 1,0 -15,0 Z"/>
+  </group>
   <path
-      android:fillColor="#0D0D14"
-      android:pathData="M29,70 Q29,67 32,67 L76,67 Q79,67 79,70 L79,75 Q79,78 76,78 L32,78 Q29,78 29,75 Z"/>
-
-  <!-- Lyric line 2 (shorter) -->
+      android:fillColor="#07070B"
+      android:pathData="M54.5,37 h4.5 v22 h-4.5 Z"/>
   <path
-      android:fillColor="#0D0D14"
-      android:pathData="M29,82 Q29,79 32,79 L62,79 Q65,79 65,82 L65,87 Q65,90 62,90 L32,90 Q29,90 29,87 Z"/>
-
+      android:fillColor="#07070B"
+      android:pathData="M57,37 C66,39 70,44 68,52 C66,47.5 63,46.5 57,46 Z"/>
 </vector>

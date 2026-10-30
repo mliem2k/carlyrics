@@ -25,6 +25,9 @@ interface LyricsDao {
     @Query("DELETE FROM cached_lyrics WHERE expiresAt < :currentTime")
     suspend fun deleteExpiredLyrics(currentTime: Long = System.currentTimeMillis()): Int
 
+    @Query("DELETE FROM cached_lyrics WHERE track = :track AND artist = :artist")
+    suspend fun deleteLyrics(track: String, artist: String): Int
+
     @Query("DELETE FROM cached_lyrics")
     suspend fun clearAllLyrics(): Int
 
