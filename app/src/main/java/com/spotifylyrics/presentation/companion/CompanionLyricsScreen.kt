@@ -1,325 +1,343 @@
 package com.mliem.carlyrics.presentation.companion
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Brightness4
-import androidx.compose.material.icons.filled.Brightness7
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.mliem.carlyrics.domain.model.TrackInfo
+
+private const val ANIM_MS = 220
+
+// Dim levels keep large bold text above 3:1 against black.
+private const val ALPHA_UPCOMING = 0.55f
+private const val ALPHA_PAST = 0.38f
+
+private val LyricStyle = TextStyle(
+    fontSize = 28.sp,
+    lineHeight = 34.sp,
+    fontWeight = FontWeight.Bold,
+    letterSpacing = (-0.3).sp
+)
+private val PlainLyricStyle = TextStyle(fontSize = 20.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium)
 
 /**
- * Phone Companion Lyrics Screen
- * 
- * Features:
- * - Real-time lyrics sync with playback
- * - Auto-scrolling to current lyric
- * - Night mode with brightness control
- * - Playback controls (play/pause, skip, seek)
- * - Responsive Material3 design
+ * Full screen lyrics: the line being sung is bright, the rest are dimmed, and the list
+ * follows playback until the user scrolls away. Tapping a line seeks the player to it.
  */
 @Composable
 fun CompanionLyricsScreen(
     viewModel: CompanionLyricsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val currentLyricIndex by viewModel.currentLyricIndex.collectAsState()
-    val isNightMode by viewModel.isNightMode.collectAsState()
-    val brightness by viewModel.brightness.collectAsState()
-    val autoScrollEnabled by viewModel.autoScrollEnabled.collectAsState()
+    val currentIndex by viewModel.currentLyricIndex.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    
-    val lazyListState = rememberLazyListState()
-    
-    // Auto-scroll to current lyric
-    LaunchedEffect(currentLyricIndex, autoScrollEnabled) {
-        if (autoScrollEnabled && uiState.lyrics.isNotEmpty()) {
-            lazyListState.animateScrollToItem(
-                index = maxOf(0, currentLyricIndex - 2),
-                scrollOffset = -100
-            )
-        }
+    val isSynced = remember(uiState.lyrics) { uiState.lyrics.any { it.timeMs > 0 } }
+
+    // Someone reading lyrics from a dash mount does not want the screen to time out.
+    val view = LocalView.current
+    DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
     }
-    
-    val backgroundColor = if (isNightMode) Color.Black else MaterialTheme.colorScheme.background
-    val contentColor = if (isNightMode) Color.White else MaterialTheme.colorScheme.onBackground
-    
-    Box(
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor)
-            .alpha(brightness)
+            .background(Color.Black)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Header: Track Info
-            CurrentTrackHeader(
-                track = uiState.currentTrack,
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            // Main Content: Lyrics Display
+        TrackHeader(track = uiState.currentTrack, isSynced = isSynced, hasLyrics = uiState.lyrics.isNotEmpty())
+
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-                uiState.error != null -> {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = uiState.error ?: "Error loading lyrics",
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                uiState.lyrics.isNotEmpty() -> {
-                    LyricsDisplay(
-                        lyrics = uiState.lyrics,
-                        currentIndex = currentLyricIndex,
-                        lazyListState = lazyListState,
-                        contentColor = contentColor,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    )
-                }
-                else -> {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No lyrics available",
-                            color = contentColor.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
+                uiState.isLoading -> LyricsSkeleton()
+                uiState.lyrics.isNotEmpty() -> LyricsList(
+                    lyrics = uiState.lyrics,
+                    currentIndex = currentIndex,
+                    isSynced = isSynced,
+                    onSeek = viewModel::seekTo
+                )
+                uiState.error != null -> CenteredMessage(
+                    title = "Lyrics unavailable",
+                    detail = "Import an .lrc file from the Lyrics Library to add them yourself."
+                )
+                else -> CenteredMessage(
+                    title = "Waiting for music",
+                    detail = "Start a song in Spotify and the lyrics appear here."
+                )
             }
-            
-            // Playback Controls
-            PlaybackControlsBar(
-                isPlaying = isPlaying,
-                onPlayPause = { viewModel.togglePlayPause() },
-                onSkipPrevious = { viewModel.skipPrevious() },
-                onSkipNext = { viewModel.skipNext() },
-                onToggleNightMode = { viewModel.toggleNightMode() },
-                isNightMode = isNightMode,
-                contentColor = contentColor,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
+
+        PlaybackControls(
+            isPlaying = isPlaying,
+            onPlayPause = viewModel::togglePlayPause,
+            onSkipPrevious = viewModel::skipPrevious,
+            onSkipNext = viewModel::skipNext
+        )
     }
 }
 
-/**
- * Header showing current track information
- */
 @Composable
-private fun CurrentTrackHeader(
-    track: com.mliem.carlyrics.domain.model.TrackInfo?,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(12.dp)
-    ) {
+private fun TrackHeader(track: TrackInfo?, isSynced: Boolean, hasLyrics: Boolean) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
+        Text(
+            text = track?.track ?: "Nothing playing",
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
         track?.let {
             Text(
-                text = it.track,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
                 text = it.artist,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                color = Color.White.copy(alpha = 0.7f),
                 maxLines = 1,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                overflow = TextOverflow.Ellipsis
             )
-        } ?: run {
+        }
+        if (hasLyrics) {
             Text(
-                text = "No track playing",
-                style = MaterialTheme.typography.titleMedium
+                text = if (isSynced) "Synced lyrics" else "Lyrics are not time synced",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isSynced) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.6f),
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
 }
 
-/**
- * Lyrics display with auto-scroll and highlighting
- */
+private enum class LineState { Past, Current, Upcoming }
+
 @Composable
-private fun LyricsDisplay(
+private fun LyricsList(
     lyrics: List<LyricLine>,
     currentIndex: Int,
-    lazyListState: androidx.compose.foundation.lazy.LazyListState,
-    contentColor: Color,
-    modifier: Modifier = Modifier
+    isSynced: Boolean,
+    onSeek: (Long) -> Unit
 ) {
-    LazyColumn(
-        modifier = modifier,
-        state = lazyListState,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 100.dp)
-    ) {
-        itemsIndexed(lyrics) { index, lyric ->
-            val isCurrentLine = index == currentIndex
-            
-            Text(
-                text = lyric.text,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(
-                        if (isCurrentLine)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            Color.Transparent
+    val listState = rememberLazyListState()
+    var following by remember { mutableStateOf(true) }
+
+    // A finger on the list means the user wants to read ahead, so stop pulling it back.
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { if (it is DragInteraction.Start) following = false }
+    }
+    LaunchedEffect(currentIndex, following, isSynced) {
+        if (following && isSynced && currentIndex >= 0) listState.animateScrollToItem(currentIndex)
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            // Top padding parks the current line in the upper third, where the eye rests.
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = maxHeight * 0.28f, bottom = maxHeight * 0.5f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            itemsIndexed(lyrics) { index, line ->
+                if (isSynced) {
+                    val state = when {
+                        index == currentIndex -> LineState.Current
+                        index < currentIndex -> LineState.Past
+                        else -> LineState.Upcoming
+                    }
+                    SyncedLine(
+                        text = line.text,
+                        state = state,
+                        onClick = {
+                            following = true
+                            onSeek(line.timeMs)
+                        }
                     )
-                    .padding(8.dp),
-                style = if (isCurrentLine)
-                    MaterialTheme.typography.headlineSmall
-                else
-                    MaterialTheme.typography.bodyLarge,
-                color = if (isCurrentLine)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    contentColor,
-                textAlign = TextAlign.Center,
-                fontSize = if (isCurrentLine) 18.sp else 14.sp
+                } else {
+                    Text(
+                        text = line.text,
+                        style = PlainLyricStyle,
+                        color = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        if (!following && isSynced) {
+            Surface(
+                onClick = { following = true },
+                shape = CircleShape,
+                color = Color.White,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = "Sync to song",
+                    style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.sp),
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncedLine(text: String, state: LineState, onClick: () -> Unit) {
+    val targetAlpha = when (state) {
+        LineState.Current -> 1f
+        LineState.Upcoming -> ALPHA_UPCOMING
+        LineState.Past -> ALPHA_PAST
+    }
+    val color by animateColorAsState(Color.White.copy(alpha = targetAlpha), tween(ANIM_MS, easing = FastOutSlowInEasing), label = "lineColor")
+    // Scale instead of font size: the text never re-wraps while it changes emphasis.
+    val scale by animateFloatAsState(if (state == LineState.Current) 1f else 0.9f, tween(ANIM_MS, easing = FastOutSlowInEasing), label = "lineScale")
+
+    Text(
+        text = text.ifBlank { "♪" },
+        style = LyricStyle,
+        color = color,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { selected = state == LineState.Current }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                transformOrigin = TransformOrigin(0f, 0.5f)
+            }
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp)
+    )
+}
+
+@Composable
+private fun LyricsSkeleton() {
+    val alpha by rememberInfiniteTransition(label = "skeleton").animateFloat(
+        initialValue = 0.08f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "skeletonAlpha"
+    )
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 48.dp).semantics { contentDescription = "Loading lyrics" },
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        listOf(0.9f, 0.7f, 0.8f, 0.55f, 0.85f, 0.6f).forEach { width ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(width)
+                    .height(28.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White.copy(alpha = alpha))
             )
         }
     }
 }
 
-/**
- * Playback controls: play/pause, skip, night mode
- */
 @Composable
-private fun PlaybackControlsBar(
+private fun CenteredMessage(title: String, detail: String) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = title, style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp), color = Color.White, textAlign = TextAlign.Center)
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun PlaybackControls(
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
     onSkipPrevious: () -> Unit,
-    onSkipNext: () -> Unit,
-    onToggleNightMode: () -> Unit,
-    isNightMode: Boolean,
-    contentColor: Color,
-    modifier: Modifier = Modifier
+    onSkipNext: () -> Unit
 ) {
     Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Night mode toggle
-        IconButton(
-            onClick = onToggleNightMode,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Icon(
-                imageVector = if (isNightMode) Icons.Default.Brightness7 else Icons.Default.Brightness4,
-                contentDescription = "Toggle night mode",
-                tint = contentColor
-            )
+        IconButton(onClick = onSkipPrevious, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.SkipPrevious, contentDescription = "Previous track", tint = Color.White, modifier = Modifier.size(32.dp))
         }
-        
-        // Skip previous
-        IconButton(
-            onClick = onSkipPrevious,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.SkipPrevious,
-                contentDescription = "Previous track",
-                tint = contentColor
-            )
-        }
-        
-        // Play/Pause (larger)
         IconButton(
             onClick = onPlayPause,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.primary)
+            modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.White)
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (isPlaying) "Pause" else "Play",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(32.dp)
+                tint = Color.Black,
+                modifier = Modifier.size(36.dp)
             )
         }
-        
-        // Skip next
-        IconButton(
-            onClick = onSkipNext,
-            modifier = Modifier.size(48.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.SkipNext,
-                contentDescription = "Next track",
-                tint = contentColor
-            )
+        IconButton(onClick = onSkipNext, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.SkipNext, contentDescription = "Next track", tint = Color.White, modifier = Modifier.size(32.dp))
         }
     }
 }

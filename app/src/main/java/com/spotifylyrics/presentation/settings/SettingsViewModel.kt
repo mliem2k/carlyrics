@@ -17,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val clearCacheUseCase: ClearCacheUseCase
+    private val clearCacheUseCase: ClearCacheUseCase,
+    val updater: com.mliem.carlyrics.data.update.AppUpdater
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())

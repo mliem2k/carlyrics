@@ -5,8 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"
@@ -37,6 +36,24 @@
             </intent-filter>
         </activity>
 
+        <!-- Android Automotive OS launcher: renders the same CarAppService templates as Android Auto.
+             Off by default so phones get no second icon; SpotifyLyricsApp turns it on in a car. -->
+        <activity
+            android:name="androidx.car.app.activity.CarAppActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
+
         <!-- Android Auto configuration -->
         <meta-data
             android:name="com.google.android.gms.car.application"
@@ -53,24 +70,24 @@
             </intent-filter>
         </service>
 
-        <!-- Foreground Service for background music detection -->
-        <service
-            android:name=".service.foreground.LyricsForegroundService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
-
         <!-- Car App Service for Android Auto -->
         <service
             android:name=".service.auto.CarAppService"
             android:exported="true">
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService" />
+                <!-- The library has no media or lyrics category; the host will not list a service without one. -->
+                <category android:name="androidx.car.app.category.POI" />
             </intent-filter>
             <meta-data
                 android:name="androidx.car.app.minCarApiLevel"
                 android:value="1" />
         </service>
+
+        <!-- Result of a self update from the system package installer -->
+        <receiver
+            android:name=".data.update.InstallResultReceiver"
+            android:exported="false" />
 
         <!-- Home Screen Widget -->
         <receiver
