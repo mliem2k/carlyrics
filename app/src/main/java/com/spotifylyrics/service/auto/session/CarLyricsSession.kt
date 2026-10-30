@@ -1,11 +1,13 @@
 package com.mliem.carlyrics.service.auto.session
 
 import android.content.Intent
+import android.graphics.Color
 import androidx.car.app.Screen
 import androidx.car.app.Session
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.mliem.carlyrics.service.LyricsOrchestrator
+import com.mliem.carlyrics.service.media.backdropColor
 import com.mliem.carlyrics.service.auto.screen.CarLyricsScreen
 import com.mliem.carlyrics.service.media.MediaSessionManager
 import dagger.hilt.EntryPoint
@@ -40,7 +42,12 @@ class CarLyricsSession : Session() {
         val orchestrator = entryPoint.lyricsOrchestrator()
         val mediaManager = entryPoint.mediaSessionManager()
 
-        val screen = CarLyricsScreen(carContext)
+        val screen = CarLyricsScreen(
+            carContext,
+            onPrevious = mediaManager::skipToPrevious,
+            onPlayPause = mediaManager::togglePlayPause,
+            onNext = mediaManager::skipToNext
+        )
         lyricsScreen = screen
 
         lifecycle.addObserver(object : DefaultLifecycleObserver {
@@ -79,14 +86,25 @@ class CarLyricsSession : Session() {
         combine(
             orchestrator.currentLyrics,
             mediaManager.currentTrackFlow,
-            mediaManager.playbackPositionFlow
-        ) { lyrics, track, positionMs ->
-            Triple(track, lyrics, lyrics?.getCurrentLyricIndex(positionMs) ?: -1)
+            mediaManager.playbackPositionFlow,
+            mediaManager.artworkPalette
+        ) { lyrics, track, positionMs, palette ->
+            CarFrame(
+                track = track,
+                lyrics = lyrics,
+                lineIndex = lyrics?.getCurrentLyricIndex(positionMs) ?: -1,
+                backdrop = palette?.let { backdropColor(it.primary) } ?: Color.BLACK
+            )
         }
-            // The host throttles template refreshes, so only redraw when the line changes.
+            // Only redraw when something visible changes: the line, not every position tick.
             .distinctUntilChanged()
-            .collect { (track, lyrics, lineIndex) ->
-                screen.update(track, lyrics, lineIndex)
-            }
+            .collect { screen.update(it.track, it.lyrics, it.lineIndex, it.backdrop) }
     }
 }
+
+private data class CarFrame(
+    val track: com.mliem.carlyrics.domain.model.TrackInfo?,
+    val lyrics: com.mliem.carlyrics.domain.model.Lyrics?,
+    val lineIndex: Int,
+    val backdrop: Int
+)
