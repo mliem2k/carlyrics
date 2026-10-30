@@ -58,8 +58,11 @@ class MediaSessionManager @Inject constructor(
         override fun onSessionDestroyed() = publish()
     }
 
-    // Only touched from the main thread (callbacks) or after listening starts.
+    // Only touched from the main thread (callbacks).
     private var controllers: List<MediaController> = emptyList()
+
+    // Set on the main thread, read by the position timer on another thread.
+    @Volatile
     private var listening = false
 
     @Volatile
