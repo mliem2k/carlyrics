@@ -154,8 +154,6 @@ fun MainScreen(
     ) {
         TopBar(
             track = track,
-            isSynced = isSynced,
-            hasLyrics = uiState.lyrics.isNotEmpty(),
             onLibrary = onNavigateToLyricsManager,
             onSettings = onNavigateToSettings
         )
@@ -321,8 +319,6 @@ private fun QueueSheet(queue: List<QueueEntry>, activeId: Long, onSelect: (Long)
 @Composable
 private fun TopBar(
     track: TrackInfo?,
-    isSynced: Boolean,
-    hasLyrics: Boolean,
     onLibrary: () -> Unit,
     onSettings: () -> Unit
 ) {
@@ -346,14 +342,6 @@ private fun TopBar(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (hasLyrics) {
-                    Text(
-                        text = if (isSynced) "Synced lyrics" else "Lyrics are not time synced",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isSynced) MaterialTheme.colorScheme.primary else Muted,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
             }
         }
         IconButton(onClick = onLibrary) {

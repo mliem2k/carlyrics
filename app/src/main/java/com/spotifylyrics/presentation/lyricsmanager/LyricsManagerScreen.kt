@@ -319,10 +319,6 @@ private fun SongRow(lyrics: Lyrics, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis
             )
         }
-        if (lyrics.isSynced) {
-            Spacer(Modifier.width(12.dp))
-            Text("Synced", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
-        }
     }
 }
 
@@ -360,12 +356,6 @@ private fun SongSheet(lyrics: Lyrics, onDismiss: () -> Unit, onExport: () -> Uni
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(lyrics.track, color = Color.White, style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(lyrics.artist, color = Muted, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    text = if (lyrics.isSynced) "Synced lyrics" else "Plain lyrics, not time synced",
-                    color = if (lyrics.isSynced) MaterialTheme.colorScheme.primary else Muted,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(onClick = onExport, modifier = Modifier.weight(1f)) { Text("Share .lrc", color = Color.White) }
