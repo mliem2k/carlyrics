@@ -53,7 +53,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -119,10 +119,10 @@ fun MainScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToLyricsManager: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val currentIndex by viewModel.currentLyricIndex.collectAsState()
-    val isPlaying by viewModel.isPlaying.collectAsState()
-    val updateState by viewModel.updater.state.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentIndex by viewModel.currentLyricIndex.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val updateState by viewModel.updater.state.collectAsStateWithLifecycle()
     val isSynced = remember(uiState.lyrics) { uiState.lyrics.any { it.timeMs > 0 } }
     val context = LocalContext.current
 
@@ -140,8 +140,8 @@ fun MainScreen(
     }
 
     val track = uiState.currentTrack
-    val queue by viewModel.queue.collectAsState()
-    val activeQueueId by viewModel.activeQueueId.collectAsState()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
+    val activeQueueId by viewModel.activeQueueId.collectAsStateWithLifecycle()
     var showQueue by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
@@ -253,7 +253,7 @@ fun MainScreen(
  */
 @Composable
 private fun ArtworkBackdrop(palette: StateFlow<ArtworkPalette?>) {
-    val colors by palette.collectAsState()
+    val colors by palette.collectAsStateWithLifecycle()
     val spec = tween<Color>(durationMillis = 600)
     val base by animateColorAsState(colors?.let { Color(backdropColor(it.primary)) } ?: Color.Black, spec, label = "backdropBase")
     val glow by animateColorAsState(colors?.let { Color(backdropColor(it.secondary)) } ?: Color.Black, spec, label = "backdropGlow")
@@ -527,8 +527,8 @@ private fun SeekBar(
     durationMs: StateFlow<Long>,
     onSeek: (Long) -> Unit
 ) {
-    val position by positionMs.collectAsState()
-    val duration by durationMs.collectAsState()
+    val position by positionMs.collectAsStateWithLifecycle()
+    val duration by durationMs.collectAsStateWithLifecycle()
     if (duration <= 0L) return
 
     // While a finger is on the bar it shows the finger, not the player.

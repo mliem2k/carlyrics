@@ -21,11 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TextSnippet
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,7 +44,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,8 +72,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val updateState by viewModel.updater.state.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val updateState by viewModel.updater.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var confirmClear by remember { mutableStateOf(false) }
@@ -118,7 +118,7 @@ fun SettingsScreen(
                 )
                 RowDivider()
                 SwitchRow(
-                    icon = Icons.Default.TextSnippet,
+                    icon = Icons.AutoMirrored.Filled.TextSnippet,
                     title = "Genius",
                     description = "Plain lyrics if LRCLIB has none.",
                     checked = uiState.geniusEnabled,
@@ -126,7 +126,7 @@ fun SettingsScreen(
                 )
                 RowDivider()
                 SwitchRow(
-                    icon = Icons.Default.TextSnippet,
+                    icon = Icons.AutoMirrored.Filled.TextSnippet,
                     title = "Musixmatch",
                     description = "Plain lyrics if the others have none.",
                     checked = uiState.musixmatchEnabled,
