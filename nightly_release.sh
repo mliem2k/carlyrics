@@ -9,15 +9,16 @@ REPO="mliem2k/carlyrics"
 : "${SIGNING_KEY_PASSWORD:?Set SIGNING_KEY_PASSWORD}"
 
 DATE=$(date -u +%Y%m%d)
-TAG="nightly_${DATE}"
-APK_SRC="app/build/outputs/apk/release/app-release.apk"
-APK_OUT="carlyrics_nightly_${DATE}.apk"
-
+# The tag carries the build number, which is also the APK's versionCode, so the app compares exact
+# builds and several releases on one day stay distinguishable.
 VERSION_CODE=$(date -u +%s)
+TAG="nightly_${DATE}_${VERSION_CODE}"
+APK_SRC="app/build/outputs/apk/release/app-release.apk"
+APK_OUT="carlyrics_${TAG}.apk"
 
 echo "==> Building release APK (${TAG})"
 ./gradlew assembleRelease \
-  -PversionName="nightly_${DATE}" \
+  -PversionName="${TAG}" \
   -PversionCode="${VERSION_CODE}" \
   --quiet
 
@@ -26,14 +27,10 @@ cp "$APK_SRC" "$APK_OUT"
 echo "==> APK ready: ${APK_OUT} ($(du -h "$APK_OUT" | cut -f1))"
 
 echo "==> Publishing GitHub release ${TAG}"
-# --cleanup-tag also removes the underlying git tag, not just the release. A
-# same day rerun otherwise reuses the FIRST run's tag/commit for the release
-# gh creates below, so the published APK and the tagged source disagree.
-gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
 gh release create "$TAG" "$APK_OUT" \
   --repo "$REPO" \
   --title "CarLyrics nightly ${DATE}" \
-  --notes "Nightly build ${DATE}
+  --notes "Nightly build ${DATE} (build ${VERSION_CODE})
 
 What is in this build:
 - LRCLIB synced lyrics (timestamped, karaoke style)

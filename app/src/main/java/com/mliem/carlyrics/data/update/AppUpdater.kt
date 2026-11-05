@@ -48,7 +48,7 @@ class AppUpdater @Inject constructor(
         scope.launch {
             _state.value = try {
                 val info = withContext(Dispatchers.IO) { fetchLatest() }
-                if (info != null && isNewer(info.tag, BuildConfig.VERSION_NAME)) UpdateState.Available(info) else UpdateState.UpToDate
+                if (info != null && isNewer(info.tag, BuildConfig.VERSION_CODE.toLong())) UpdateState.Available(info) else UpdateState.UpToDate
             } catch (e: Exception) {
                 Log.w(TAG, "Update check failed", e)
                 UpdateState.Failed("Could not check for updates. Check your connection and try again.")
@@ -86,7 +86,7 @@ class AppUpdater @Inject constructor(
 
     private fun fetchLatest(): UpdateInfo? {
         val request = Request.Builder()
-            .url("https://api.github.com/repos/$REPO/releases?per_page=5")
+            .url("https://api.github.com/repos/$REPO/releases?per_page=30")
             .header("Accept", "application/vnd.github+json")
             .build()
         okHttpClient.newCall(request).execute().use { response ->
@@ -99,6 +99,7 @@ class AppUpdater @Inject constructor(
         val dir = File(context.cacheDir, "updates").apply { deleteRecursively(); mkdirs() }
         val target = File(dir, "update.apk")
         val digest = MessageDigest.getInstance("SHA-256")
+        check(info.apkUrl.startsWith("https://")) { "The update is not served over https." }
         okHttpClient.newCall(Request.Builder().url(info.apkUrl).build()).execute().use { response ->
             check(response.isSuccessful) { "Download failed (${response.code})" }
             val body = response.body!!
@@ -117,6 +118,10 @@ class AppUpdater @Inject constructor(
                     }
                 }
             }
+        }
+        if (info.sizeBytes > 0 && target.length() != info.sizeBytes) {
+            target.delete()
+            error("The download was incomplete, so it was not installed.")
         }
         val actual = digest.digest().joinToString("") { "%02x".format(it) }
         if (info.sha256 != null && !actual.equals(info.sha256, ignoreCase = true)) {

@@ -2,6 +2,15 @@
 
 Nightly builds are published as pre-releases on GitHub. The newest entry is first.
 
+## Unreleased
+
+### Changed
+1. Release tags carry the build number (nightly_YYYYMMDD_BUILD) and the updater compares that number with the installed build, so two releases on one day are told apart and the highest build wins whatever order GitHub lists them in.
+2. The updater refuses a download that is not served over https or whose size differs from the release asset.
+
+### Removed
+1. Legacy build scripts and notes from the Spotify Lyrics days, which assumed Java 17 and one of them documented a hard coded keystore password.
+
 ## 2026-10-30 (builds 3 to 8)
 
 ### Added
