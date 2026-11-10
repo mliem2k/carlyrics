@@ -12,7 +12,7 @@ DATE=$(date -u +%Y%m%d)
 # The tag carries the build number, which is also the APK's versionCode, so the app compares exact
 # builds and several releases on one day stay distinguishable.
 VERSION_CODE=$(date -u +%s)
-TAG="nightly_${DATE}_${VERSION_CODE}"
+TAG="nightly-${DATE}-${VERSION_CODE}"
 APK_SRC="app/build/outputs/apk/release/app-release.apk"
 APK_OUT="carlyrics_${TAG}.apk"
 
