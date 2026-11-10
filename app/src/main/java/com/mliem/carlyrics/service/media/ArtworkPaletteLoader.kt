@@ -2,6 +2,7 @@ package com.mliem.carlyrics.service.media
 
 import android.graphics.Bitmap
 import com.mliem.carlyrics.di.ApplicationScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -61,7 +62,14 @@ internal class LatestArtworkJob<Input>(
             activeKey = key
             job = scope.launch {
                 try {
-                    val palette = compute(input)
+                    val palette = try {
+                        compute(input)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        // A player can recycle its metadata bitmap while it is being read.
+                        null
+                    }
                     synchronized(lock) {
                         if (submission == generation) onResult(palette)
                     }

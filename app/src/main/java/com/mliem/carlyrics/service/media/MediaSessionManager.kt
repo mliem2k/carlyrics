@@ -208,8 +208,8 @@ class MediaSessionManager @Inject constructor(
             _isPlaying.value = false
             _playbackPositionFlow.value = 0L
             _durationMs.value = 0L
-            _artworkPalette.value = null
             artworkPaletteLoader.clear()
+            _artworkPalette.value = null
             _queue.value = emptyList()
             _activeQueueId.value = -1L
             artworkTrackKey = ""
