@@ -2,6 +2,7 @@ package com.mliem.carlyrics.presentation.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mliem.android.update.UpdateClient
 import com.mliem.carlyrics.domain.usecase.ClearCacheUseCase
 import com.mliem.carlyrics.domain.repository.LyricsRepository
 import com.mliem.carlyrics.domain.repository.SettingsRepository
@@ -21,7 +22,7 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val clearCacheUseCase: ClearCacheUseCase,
     lyricsRepository: LyricsRepository,
-    val updater: com.mliem.carlyrics.data.update.AppUpdater
+    val updater: UpdateClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())

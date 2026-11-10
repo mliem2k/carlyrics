@@ -5,8 +5,9 @@ Nightly builds are published as pre-releases on GitHub. The newest entry is firs
 ## Unreleased
 
 ### Changed
-1. Release tags carry the build number (nightly_YYYYMMDD_BUILD) and the updater compares that number with the installed build, so two releases on one day are told apart and the highest build wins whatever order GitHub lists them in.
+1. Release tags now use `nightly-YYYYMMDD-BUILD`, the same policy as Playtivity and Scientific Calculator. The updater comes from the shared `android-core` module and still reads the old `nightly_...` tags, so installed builds update across.
 2. The updater refuses a download that is not served over https or whose size differs from the release asset.
+3. The updater also verifies the SHA-256 digest GitHub publishes for an asset before handing it to the system installer.
 
 ### Removed
 1. Legacy build scripts and notes from the Spotify Lyrics days, which assumed Java 17 and one of them documented a hard coded keystore password.

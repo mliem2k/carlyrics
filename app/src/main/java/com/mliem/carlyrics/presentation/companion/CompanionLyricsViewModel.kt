@@ -2,9 +2,9 @@ package com.mliem.carlyrics.presentation.companion
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mliem.android.update.UpdateClient
 import com.mliem.carlyrics.domain.model.TrackInfo
 import com.mliem.carlyrics.domain.repository.LyricsRepository
-import com.mliem.carlyrics.data.update.AppUpdater
 import com.mliem.carlyrics.domain.repository.SettingsRepository
 import com.mliem.carlyrics.service.media.MediaSessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +24,7 @@ class CompanionLyricsViewModel @Inject constructor(
     private val mediaSessionManager: MediaSessionManager,
     private val lyricsRepository: LyricsRepository,
     private val settingsRepository: SettingsRepository,
-    val updater: AppUpdater
+    val updater: UpdateClient
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CompanionUiState())

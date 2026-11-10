@@ -44,9 +44,11 @@ Install on a connected device:
 ./gradlew installDebug
 ```
 
+The self-updater is the shared [android-core](https://github.com/mliem2k/android-core) module. Check that repository out beside this one (`../android-core`), or set `ANDROID_CORE_DIR` to its path.
+
 ## Nightly Release
 
-Run `./nightly_release.sh` to build a signed release APK and publish it to GitHub Releases. Requires `gh` CLI authenticated and these exported: `SIGNING_KEYSTORE_PATH`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`.
+Run `./nightly_release.sh` to build a signed release APK and publish it to GitHub Releases. Nightly tags use `nightly-YYYYMMDD-BUILD`, the same policy as Playtivity and Scientific Calculator. Requires `gh` CLI authenticated and these exported: `SIGNING_KEYSTORE_PATH`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`.
 
 ## How It Works
 
