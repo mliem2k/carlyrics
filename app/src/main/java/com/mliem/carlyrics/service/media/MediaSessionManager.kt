@@ -2,7 +2,6 @@ package com.mliem.carlyrics.service.media
 
 import android.content.ComponentName
 import android.content.Context
-import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
@@ -35,7 +34,8 @@ import android.media.session.MediaSessionManager as SystemMediaSessionManager
 @Singleton
 class MediaSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    @ApplicationScope private val scope: CoroutineScope
+    @ApplicationScope private val scope: CoroutineScope,
+    private val artworkPaletteLoader: ArtworkPaletteLoader
 ) {
 
     private val _currentTrackFlow = MutableStateFlow<TrackInfo?>(null)
@@ -118,6 +118,7 @@ class MediaSessionManager @Inject constructor(
         if (activeConsumers > 0) return
         tickerJob?.cancel()
         tickerJob = null
+        artworkPaletteLoader.clear()
         mainHandler.post {
             if (listening) systemManager.removeOnActiveSessionsChangedListener(sessionsListener)
             listening = false
@@ -177,13 +178,13 @@ class MediaSessionManager @Inject constructor(
         val art = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
         artworkTrackKey = trackKey
-        _artworkPalette.value = art?.let {
-            // Colors only need a thumbnail; the full cover never has to be kept.
-            val thumbnail = Bitmap.createScaledBitmap(it, ARTWORK_SIZE_PX, ARTWORK_SIZE_PX, true)
-            val pixels = IntArray(ARTWORK_SIZE_PX * ARTWORK_SIZE_PX)
-            thumbnail.getPixels(pixels, 0, ARTWORK_SIZE_PX, 0, 0, ARTWORK_SIZE_PX, ARTWORK_SIZE_PX)
-            extractPalette(pixels)
+        if (art == null) {
+            artworkPaletteLoader.clear()
+            _artworkPalette.value = null
+            return
         }
+        // The bitmap is captured here, on the main thread; scaling and extraction run off it.
+        artworkPaletteLoader.submit(trackKey, art) { palette -> _artworkPalette.value = palette }
     }
 
     /** Playing session wins, then Spotify, then whatever is first. */
@@ -208,6 +209,7 @@ class MediaSessionManager @Inject constructor(
             _playbackPositionFlow.value = 0L
             _durationMs.value = 0L
             _artworkPalette.value = null
+            artworkPaletteLoader.clear()
             _queue.value = emptyList()
             _activeQueueId.value = -1L
             artworkTrackKey = ""
@@ -244,7 +246,6 @@ class MediaSessionManager @Inject constructor(
 
     companion object {
         private const val TAG = "MediaSessionManager"
-        private const val ARTWORK_SIZE_PX = 32
         private const val TICK_MS = 250L
         private const val RETRY_MS = 2_000L
         private val SPOTIFY_PACKAGES = setOf("com.spotify.music", "com.spotify.lite")
