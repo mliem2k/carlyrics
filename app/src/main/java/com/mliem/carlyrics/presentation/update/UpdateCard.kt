@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.mliem.carlyrics.data.update.UpdateState
+import com.mliem.android.update.UpdateState
 
 /** Update status with the one action that fits it. Shared by the home banner and Settings. */
 @Composable

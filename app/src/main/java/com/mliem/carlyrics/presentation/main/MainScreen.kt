@@ -167,8 +167,8 @@ fun MainScreen(
                     UpdateCard(
                         state = updateState,
                         currentVersion = BuildConfig.VERSION_NAME,
-                        onCheck = viewModel.updater::check,
-                        onUpdate = viewModel.updater::downloadAndInstall
+                        onCheck = { viewModel.updater.check() },
+                        onUpdate = { viewModel.updater.downloadAndInstall() }
                     )
                 }
                 if (!hasNotificationAccess) {
