@@ -64,7 +64,7 @@ import com.mliem.carlyrics.presentation.update.UpdateCard
 
 private val Panel = Color(0xFF1A1A1A)
 private val Muted = Color.White.copy(alpha = 0.7f)
-private const val SOURCE_URL = "https://github.com/mliem2k/carlyrics"
+private const val SOURCE_URL = "https://github.com/mliem2k/livelyrics"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,7 +167,7 @@ fun SettingsScreen(
                 ActionRow(
                     icon = Icons.Default.Code,
                     title = "Source code",
-                    description = "github.com/mliem2k/carlyrics",
+                    description = "github.com/mliem2k/livelyrics",
                     onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SOURCE_URL))) }
                 )
             }

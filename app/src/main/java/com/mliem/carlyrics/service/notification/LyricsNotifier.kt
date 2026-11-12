@@ -37,7 +37,7 @@ class LyricsNotifier @Inject constructor(
     fun start() {
         if (job != null) return
         notificationManager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "CarLyrics", NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(CHANNEL_ID, "LiveLyrics", NotificationManager.IMPORTANCE_LOW)
                 .apply { description = "Live lyrics in the status bar" }
         )
         job = scope.launch {

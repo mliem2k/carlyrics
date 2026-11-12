@@ -1,0 +1,7 @@
+<!-- The Android themed icon (ic_launcher_monochrome.xml), cropped to the glyph for the menu bar. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="22 24 64 64">
+  <path fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round" d="M41,28 H67 A15,15 0 0 1 82,43 V57 A15,15 0 0 1 67,72 H56 L40,84 L41,72 A15,15 0 0 1 26,57 V43 A15,15 0 0 1 41,28 Z"/>
+  <ellipse cx="49" cy="59" rx="7.5" ry="5.8" transform="rotate(-22 49 59)"/>
+  <rect x="54.5" y="37" width="4.5" height="22"/>
+  <path d="M57,37 C66,39 70,44 68,52 C66,47.5 63,46.5 57,46 Z"/>
+</svg>

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="mliem2k/carlyrics"
+REPO="mliem2k/livelyrics"
 
 : "${SIGNING_KEYSTORE_PATH:?Set SIGNING_KEYSTORE_PATH to the release keystore path}"
 : "${SIGNING_STORE_PASSWORD:?Set SIGNING_STORE_PASSWORD}"
@@ -14,7 +14,7 @@ DATE=$(date -u +%Y%m%d)
 VERSION_CODE=$(date -u +%s)
 TAG="nightly-${DATE}-${VERSION_CODE}"
 APK_SRC="app/build/outputs/apk/release/app-release.apk"
-APK_OUT="carlyrics_${TAG}.apk"
+APK_OUT="livelyrics_${TAG}.apk"
 
 echo "==> Building release APK (${TAG})"
 ./gradlew assembleRelease \
@@ -29,7 +29,7 @@ echo "==> APK ready: ${APK_OUT} ($(du -h "$APK_OUT" | cut -f1))"
 echo "==> Publishing GitHub release ${TAG}"
 gh release create "$TAG" "$APK_OUT" \
   --repo "$REPO" \
-  --title "CarLyrics nightly ${DATE}" \
+  --title "LiveLyrics nightly ${DATE}" \
   --notes "Nightly build ${DATE} (build ${VERSION_CODE})
 
 What is in this build:

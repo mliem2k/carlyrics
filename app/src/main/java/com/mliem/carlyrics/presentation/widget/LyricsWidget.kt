@@ -62,7 +62,7 @@ private fun LyricsWidgetContent() {
     ) {
         if (trackTitle.isEmpty() && lyricLine.isEmpty()) {
             Text(
-                text = "CarLyrics",
+                text = "LiveLyrics",
                 style = TextStyle(
                     color = ColorProvider(Color(0xFF888888)),
                     fontSize = 14.sp

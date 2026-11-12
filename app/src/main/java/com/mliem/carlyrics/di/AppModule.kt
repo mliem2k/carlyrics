@@ -62,13 +62,13 @@ object AppModule {
     ): UpdateClient = UpdateClient(
         context = context,
         config = UpdateConfig(
-            repo = "mliem2k/carlyrics",
+            repo = "mliem2k/livelyrics",
             installReceiver = InstallResultReceiver::class.java,
             channels = listOf(Channel.NIGHTLY),
             updatesEnabled = !BuildConfig.DEBUG,
             messages = UpdateMessages(
-                permission = "Allow CarLyrics to install apps in the settings screen that just opened, then tap Update again.",
-                signature = "This build is signed with a different key than the installed app. Uninstall CarLyrics once, then install the new APK.",
+                permission = "Allow LiveLyrics to install apps in the settings screen that just opened, then tap Update again.",
+                signature = "This build is signed with a different key than the installed app. Uninstall LiveLyrics once, then install the new APK.",
             ),
         ),
         http = okHttpClient,

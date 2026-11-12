@@ -328,7 +328,7 @@ private fun TopBar(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = track?.track ?: "CarLyrics",
+                text = track?.track ?: "LiveLyrics",
                 style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
                 color = Color.White,
                 maxLines = 1,
@@ -505,7 +505,7 @@ private fun AccessBanner(onOpenSettings: () -> Unit) {
     ) {
         Text("Turn on notification access", style = MaterialTheme.typography.titleMedium, color = Color.White)
         Text(
-            text = "CarLyrics needs it to see which song is playing.",
+            text = "LiveLyrics needs it to see which song is playing.",
             style = MaterialTheme.typography.bodyMedium,
             color = Muted
         )

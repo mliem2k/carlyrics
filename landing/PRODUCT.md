@@ -6,11 +6,11 @@ brand
 
 ## Users
 
-Android users who listen to music in Spotify (and similar apps) and want the lyrics to follow along without leaving the music player: on the phone in a pocket, on a dash mount, or in the car. They arrive from GitHub, a forum post or a friend, on a phone or a laptop, and are comfortable sideloading an APK. They are deciding one thing: is this worth installing, and can I trust it.
+Android listeners who want synced lyrics in Android Auto and on their phone while music plays. Mac users who play music in Spotify desktop can get the same synced lyrics in a corner popup. They arrive from GitHub, a forum post or a friend, on a phone or a laptop, and are comfortable sideloading an APK. They are deciding one thing: is this worth installing, and can I trust it.
 
 ## Product Purpose
 
-CarLyrics shows synced lyrics for whatever is playing, in the app, in the status bar, on a home screen widget, and (experimentally) on Android Auto. It is free, open source, has no account and no ads. The landing page exists to get a visitor to download the latest APK, and to earn enough trust to do it: real screenshots, plain claims, a visible source link.
+LiveLyrics puts synced lyrics in Android Auto first, with companion lyrics in the Android app, status bar, and home screen widget. Android Auto remains labelled experimental until it has been tested in a real car. A native macOS corner popup shows synced lyrics for Spotify desktop playback; it is not notarized, so the page tells Mac visitors how to open it. The product is free, open source, has no account and no ads. The landing page exists to get a visitor to download the latest APK or Mac app, and to earn enough trust to do it: real screenshots, plain claims, a visible source link.
 
 ## Brand Personality
 
@@ -26,7 +26,7 @@ Quiet, music native, honest. It sounds like a good player app: calm, confident, 
 ## Design Principles
 
 1. Show the real thing. Real screenshots of the real app carry the page; copy only explains what a picture cannot.
-2. Say only what is true today. Android Auto is experimental and labelled that way; proven features lead.
+2. Lead with Android Auto lyrics, while keeping its experimental label until it has been tested in a real car. Say only what is true today.
 3. One clear action. Download is always one tap away, and the source code is one tap away from it.
 4. Let the lyrics be the hero. Large type, generous space, the one green accent marking the current line.
 5. Calm by default. No decoration that does not carry meaning.

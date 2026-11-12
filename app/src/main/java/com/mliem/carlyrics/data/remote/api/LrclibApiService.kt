@@ -22,7 +22,7 @@ class LrclibApiService(private val okHttpClient: OkHttpClient) {
 
     companion object {
         private const val BASE_URL = "https://lrclib.net/api"
-        private const val USER_AGENT = "CarLyrics/1.0 (https://github.com/mliem2k/carlyrics)"
+        private const val USER_AGENT = "LiveLyrics/1.0 (https://github.com/mliem2k/livelyrics)"
     }
 
     suspend fun fetchLyrics(trackInfo: TrackInfo): Lyrics? = withContext(Dispatchers.IO) {
