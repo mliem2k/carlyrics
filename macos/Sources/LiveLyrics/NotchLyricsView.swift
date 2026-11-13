@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// A black bar hanging from the notch with the current line. Hovering it opens
+/// A black bar hanging from the notch with the previous, current and next line. Hovering it opens
 /// the full popup in place, with the playback controls.
 struct NotchLyricsView: View {
-    static let collapsedSize = NSSize(width: 440, height: 30)
+    static let collapsedSize = NSSize(width: 440, height: 74)
     static let expandedSize = NSSize(width: 440, height: 280)
 
     @ObservedObject var model: LyricsViewModel
@@ -18,10 +18,7 @@ struct NotchLyricsView: View {
             if isExpanded {
                 LyricsPopoverView(model: model, isInNotch: true, onTogglePlacement: onTogglePlacement)
             } else {
-                Text(currentLine)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(model.snapshot == nil ? 0.56 : 1))
-                    .lineLimit(1)
+                collapsedLines
                     .padding(.horizontal, 18)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.black)
@@ -45,12 +42,33 @@ struct NotchLyricsView: View {
         }
     }
 
-    private var currentLine: String {
-        guard let snapshot = model.snapshot else { return model.emptyTitle }
-        if let index = model.currentLineIndex, model.lines.indices.contains(index) {
-            return model.lines[index].text
+    @ViewBuilder
+    private var collapsedLines: some View {
+        if let snapshot = model.snapshot {
+            // Before the first line, the title stands in for the current one.
+            let current = model.currentLineIndex
+            VStack(spacing: 3) {
+                sideLine(current.map { $0 - 1 })
+                Text(current.map { model.lines[$0].text } ?? "\(snapshot.track.title) · \(snapshot.track.artist)")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                sideLine((current ?? -1) + 1)
+            }
+        } else {
+            Text(model.emptyTitle)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.56))
+                .lineLimit(1)
         }
-        return "\(snapshot.track.title) · \(snapshot.track.artist)"
+    }
+
+    /// A dimmed neighbouring line, blank when there is none, so the current line stays centred.
+    private func sideLine(_ index: Int?) -> some View {
+        Text(index.flatMap { model.lines.indices.contains($0) ? model.lines[$0].text : nil } ?? " ")
+            .font(.system(size: 12, design: .rounded))
+            .foregroundStyle(.white.opacity(0.45))
+            .lineLimit(1)
     }
 
     private func setExpanded(_ expanded: Bool) {
