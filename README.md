@@ -32,8 +32,8 @@ A small popup in the corner of the screen follows the song playing in Spotify de
 - Hover the popup for previous, play/pause and next; the controls stay out of the way otherwise.
 - Scroll to read ahead, then click Sync to jump back to the current line.
 - Resize it down to a single line; it remembers its size and position.
-- Or hang it under the notch: a black bar shows the previous, current and next line and opens the full popup on hover. The button beside Quit switches between the corner and the notch.
-- The menu bar icon shows or hides it.
+- Or hang it under the notch: a black bar shows the previous, current and next line. Clicks pass through it and it fades while the pointer is over it; click the menu bar icon to open the full popup. The button beside Quit switches between the corner and the notch.
+- In the corner, the menu bar icon shows or hides it.
 
 Requires macOS 13 or newer and the Spotify desktop app. See [macos/README.md](macos/README.md) for install and build details.
 
