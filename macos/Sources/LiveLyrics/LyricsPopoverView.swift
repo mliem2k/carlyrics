@@ -5,9 +5,14 @@ struct LyricsPopoverView: View {
     /// Height the playback controls add below the lyrics, divider included.
     static let controlsHeight: CGFloat = 77
 
+    static let panelBackground = Color(red: 0.075, green: 0.09, blue: 0.085)
+
     @ObservedObject var model: LyricsViewModel
+    /// Under the notch the popup is black and its controls stay shown, since it only opens on hover.
+    var isInNotch = false
     /// Asks the window to grow or shrink by `controlsHeight` before the controls show or hide.
     var onControlsVisibilityChange: @MainActor (Bool) -> Void = { _ in }
+    var onTogglePlacement: @MainActor () -> Void = {}
     @State private var isHovering = false
     @State private var followsPlayback = true
     @State private var scrollMonitor: Any?
@@ -19,43 +24,60 @@ struct LyricsPopoverView: View {
                 trackHeader(snapshot)
                 Divider().overlay(Color.white.opacity(0.08))
                 lyricsBody
-                if isHovering {
+                if isHovering || isInNotch {
                     Divider().overlay(Color.white.opacity(0.08))
                     playbackControls(snapshot)
                 }
             } else {
                 emptyState
-                    .overlay(alignment: .topTrailing) { quitButton.padding(10) }
+                    .overlay(alignment: .topTrailing) { windowButtons.padding(10) }
                 Spacer(minLength: 0)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.075, green: 0.09, blue: 0.085))
+        .background(background)
         .ignoresSafeArea()
         .preferredColorScheme(.dark)
         .onHover { hovering in
+            guard !isInNotch else { return }
             hideControlsTask?.cancel()
             if hovering {
                 setControlsVisible(model.snapshot != nil)
             } else {
-                hideControlsTask = Task { await hideControlsAfterDelay() }
+                // A long pause, so dragging an edge to resize does not collapse the controls.
+                hideControlsTask = Task {
+                    if await waitToHide(after: .seconds(1.5)) { setControlsVisible(false) }
+                }
             }
         }
     }
+
+    private var background: Color { isInNotch ? .black : Self.panelBackground }
 
     private func setControlsVisible(_ visible: Bool) {
         onControlsVisibilityChange(visible)
         isHovering = visible
     }
 
-    /// Leaving the popup hides the controls only after a pause, and never while a
-    /// mouse button is down, so dragging an edge to resize does not collapse them.
-    private func hideControlsAfterDelay() async {
-        repeat {
-            try? await Task.sleep(for: .seconds(1.5))
-            if Task.isCancelled { return }
-        } while NSEvent.pressedMouseButtons != 0
-        setControlsVisible(false)
+    private var windowButtons: some View {
+        HStack(spacing: 2) {
+            placementButton
+            quitButton
+        }
+    }
+
+    private var placementButton: some View {
+        let label = isInNotch ? "Move to the corner" : "Show under the notch"
+        return Button(action: onTogglePlacement) {
+            Image(systemName: isInNotch ? "rectangle.inset.topright.filled" : "rectangle.topthird.inset.filled")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.white.opacity(0.45))
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .accessibilityLabel(label)
     }
 
     private var quitButton: some View {
@@ -85,7 +107,7 @@ struct LyricsPopoverView: View {
                 .lineLimit(1)
 
             Spacer(minLength: 0)
-            quitButton
+            windowButtons
         }
         // The title and artist truncate in a narrow popup; hovering shows them in full.
         .help("\(snapshot.track.title), \(snapshot.track.artist)")
@@ -159,7 +181,7 @@ struct LyricsPopoverView: View {
                     } label: {
                         Label("Sync", systemImage: "arrow.triangle.2.circlepath")
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color(red: 0.075, green: 0.09, blue: 0.085))
+                            .foregroundStyle(Self.panelBackground)
                             .padding(.horizontal, 11)
                             .padding(.vertical, 6)
                             .background(Color(red: 0.47, green: 0.91, blue: 0.63), in: Capsule())
@@ -171,7 +193,7 @@ struct LyricsPopoverView: View {
             }
             .overlay(alignment: .top) {
                 LinearGradient(
-                    colors: [Color(red: 0.075, green: 0.09, blue: 0.085), .clear],
+                    colors: [background, .clear],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -180,7 +202,7 @@ struct LyricsPopoverView: View {
             }
             .overlay(alignment: .bottom) {
                 LinearGradient(
-                    colors: [.clear, Color(red: 0.075, green: 0.09, blue: 0.085)],
+                    colors: [.clear, background],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -205,7 +227,7 @@ struct LyricsPopoverView: View {
             Button(action: model.playPause) {
                 Image(systemName: snapshot.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.075, green: 0.09, blue: 0.085))
+                    .foregroundStyle(Self.panelBackground)
                     .frame(width: 46, height: 46)
                     .background(Color(red: 0.47, green: 0.91, blue: 0.63), in: Circle())
             }
@@ -251,7 +273,7 @@ struct LyricsPopoverView: View {
                 .frame(width: 60, height: 60)
                 .background(Color.white.opacity(0.05), in: Circle())
 
-            Text(emptyTitle)
+            Text(model.emptyTitle)
                 .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
@@ -267,13 +289,13 @@ struct LyricsPopoverView: View {
                 Button("Open Privacy Settings", action: openAutomationSettings)
                     .buttonStyle(.borderedProminent)
                     .tint(Color(red: 0.47, green: 0.91, blue: 0.63))
-                    .foregroundStyle(Color(red: 0.075, green: 0.09, blue: 0.085))
+                    .foregroundStyle(Self.panelBackground)
                     .padding(.top, 3)
             } else if model.status == .playerUnavailable || model.status == .waitingForSpotify {
                 Button("Open \(model.playerName)", action: model.openPlayer)
                     .buttonStyle(.borderedProminent)
                     .tint(Color(red: 0.47, green: 0.91, blue: 0.63))
-                    .foregroundStyle(Color(red: 0.075, green: 0.09, blue: 0.085))
+                    .foregroundStyle(Self.panelBackground)
                     .padding(.top, 3)
             }
         }
@@ -281,14 +303,6 @@ struct LyricsPopoverView: View {
         .padding(.horizontal, 24)
         .padding(.top, 44)
         .accessibilityElement(children: .contain)
-    }
-
-    private var emptyTitle: String {
-        switch model.status {
-        case .permissionRequired: "Allow \(model.playerName) access"
-        case .playerUnavailable: "\(model.playerName) could not be read"
-        default: "Start a song in \(model.playerName)"
-        }
     }
 
     private var emptyDetail: String {
@@ -326,4 +340,14 @@ struct LyricsPopoverView: View {
         }
         NSWorkspace.shared.open(url)
     }
+}
+
+/// Waits `delay`, then keeps waiting while a mouse button is down. Returns false when cancelled.
+@MainActor
+func waitToHide(after delay: Duration) async -> Bool {
+    repeat {
+        try? await Task.sleep(for: delay)
+        if Task.isCancelled { return false }
+    } while NSEvent.pressedMouseButtons != 0
+    return true
 }

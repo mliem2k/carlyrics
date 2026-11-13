@@ -20,6 +20,14 @@ final class LyricsViewModel: ObservableObject {
 
     var playerName: String { player.displayName }
 
+    var emptyTitle: String {
+        switch status {
+        case .permissionRequired: "Allow \(playerName) access"
+        case .playerUnavailable: "\(playerName) could not be read"
+        default: "Start a song in \(playerName)"
+        }
+    }
+
     var currentLineIndex: Int? {
         guard let position = snapshot?.positionMilliseconds else { return nil }
         return lines.lastIndex { $0.startTimeMilliseconds <= position }

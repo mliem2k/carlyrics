@@ -23,6 +23,7 @@ A corner popup that shows synced lyrics for the song playing in Spotify desktop.
 - Synced LRCLIB lyrics that scroll with the song, with a Sync button after you scroll away
 - Previous, play/pause and next controls that appear when you hover the popup
 - Resizable; it remembers its size and position
+- Can hang under the notch, showing the current line and opening on hover
 - Menu bar icon to show or hide it
 
 Install: unzip, move LiveLyrics.app to Applications and open it. The app is not notarized, so macOS blocks the first launch: open System Settings, Privacy & Security, and click Open Anyway. Allow Spotify access when asked.

@@ -17,10 +17,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let model = LyricsViewModel()
     private var statusItem: NSStatusItem?
     private var panel: NSPanel?
+    private var notchPanel: NSPanel?
+    private var notchExpanded = false
+    private var showsInNotch = UserDefaults.standard.bool(forKey: AppDelegate.notchKey)
+    private var activePanel: NSPanel? { showsInNotch ? notchPanel : panel }
     private var controlsShown = false
     /// How far the panel moved up to fit the controls above the Dock.
     private var controlsShift: CGFloat = 0
     private static let frameName = "LyricsPanel"
+    private static let notchKey = "ShowUnderNotch"
     private static let minimumSize = NSSize(width: 200, height: 80)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -36,6 +41,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         item.button?.action = #selector(togglePanel)
         statusItem = item
 
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(placeNotchPanel),
+            name: NSApplication.didChangeScreenParametersNotification, object: nil
+        )
         showPanel()
     }
 
@@ -79,19 +88,91 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func togglePanel() {
-        if panel?.isVisible == true {
-            panel?.close()
+        if activePanel?.isVisible == true {
+            activePanel?.close()
         } else {
             showPanel()
         }
     }
 
     private func showPanel() {
-        let panel = self.panel ?? makePanel()
-        self.panel = panel
+        let panel: NSPanel
+        if showsInNotch {
+            panel = notchPanel ?? makeNotchPanel()
+            notchPanel = panel
+            notchExpanded = false
+            let hostingView = NSHostingView(rootView: NotchLyricsView(
+                model: model,
+                onExpandedChange: { [weak self] expanded in
+                    self?.notchExpanded = expanded
+                    self?.placeNotchPanel()
+                },
+                onTogglePlacement: { [weak self] in self?.setShowsInNotch(false) }
+            ))
+            hostingView.sizingOptions = []
+            panel.contentView = hostingView
+            placeNotchPanel()
+        } else {
+            panel = self.panel ?? makePanel()
+            self.panel = panel
+            // A fresh view each time, so the controls start hidden like the frame.
+            let hostingView = NSHostingView(rootView: LyricsPopoverView(
+                model: model,
+                onControlsVisibilityChange: { [weak self] shown in self?.setControlsShown(shown) },
+                onTogglePlacement: { [weak self] in self?.setShowsInNotch(true) }
+            ))
+            // The panel's size comes from the user and the controls, never from the SwiftUI content.
+            hostingView.sizingOptions = []
+            panel.contentView = hostingView
+        }
         model.start()
         panel.orderFrontRegardless()
         panel.makeKey()
+    }
+
+    private func setShowsInNotch(_ inNotch: Bool) {
+        setControlsShown(false)
+        // orderOut, not close, so the lyrics keep playing through the switch.
+        activePanel?.orderOut(nil)
+        showsInNotch = inNotch
+        UserDefaults.standard.set(inNotch, forKey: Self.notchKey)
+        showPanel()
+    }
+
+    /// Hangs the notch panel from the bottom of the menu bar, centred on the
+    /// notch, or on the main screen when no screen has one.
+    @objc private func placeNotchPanel() {
+        guard let notchPanel,
+              let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main
+        else { return }
+        let menuBarHeight = max(screen.safeAreaInsets.top, screen.frame.maxY - screen.visibleFrame.maxY)
+        let size = notchExpanded ? NotchLyricsView.expandedSize : NotchLyricsView.collapsedSize
+        notchPanel.setFrame(NSRect(
+            x: screen.frame.midX - size.width / 2,
+            y: screen.frame.maxY - menuBarHeight - size.height,
+            width: size.width,
+            height: size.height
+        ), display: true)
+    }
+
+    private func makeNotchPanel() -> NSPanel {
+        let panel = KeyablePanel(
+            contentRect: NSRect(origin: .zero, size: NotchLyricsView.collapsedSize),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        // Clear, so the rounded bottom corners show what is behind them.
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.isReleasedWhenClosed = false
+        panel.hidesOnDeactivate = false
+        panel.allowsToolTipsWhenApplicationIsInactive = true
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
+        panel.delegate = self
+        return panel
     }
 
     private func makePanel() -> NSPanel {
@@ -114,12 +195,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         panel.allowsToolTipsWhenApplicationIsInactive = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        let hostingView = NSHostingView(rootView: LyricsPopoverView(model: model) { [weak self] shown in
-            self?.setControlsShown(shown)
-        })
-        // The panel's size comes from the user and the controls, never from the SwiftUI content.
-        hostingView.sizingOptions = []
-        panel.contentView = hostingView
         panel.delegate = self
         if !panel.setFrameUsingName(Self.frameName) {
             positionInTopRightCorner(panel)
@@ -136,4 +211,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             y: visible.maxY - panel.frame.height - margin
         ))
     }
+}
+
+/// A borderless panel can't become key by default, which the popup's buttons need.
+private final class KeyablePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
 }
