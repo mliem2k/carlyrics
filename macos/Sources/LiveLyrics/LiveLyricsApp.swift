@@ -18,7 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var panel: NSPanel?
     private var notchPanel: NSPanel?
-    private var notchExpanded = false
+    private let notchState = NotchState()
+    private var pointerMonitor: Any?
     private var showsInNotch = UserDefaults.standard.bool(forKey: AppDelegate.notchKey)
     private var activePanel: NSPanel? { showsInNotch ? notchPanel : panel }
     private var controlsShown = false
@@ -45,6 +46,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             self, selector: #selector(placeNotchPanel),
             name: NSApplication.didChangeScreenParametersNotification, object: nil
         )
+        // Mouse moves outside the app need no permission; the bar ignores the pointer, so all moves are outside.
+        pointerMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] _ in
+            MainActor.assumeIsolated { self?.updatePointerOverNotch() }
+        }
         showPanel()
     }
 
@@ -87,8 +92,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         panel.setFrame(frame, display: true)
     }
 
+    /// Under the notch the icon opens and closes the full popup; in the corner it shows and hides it.
     @objc private func togglePanel() {
-        if activePanel?.isVisible == true {
+        if showsInNotch, notchPanel?.isVisible == true {
+            setNotchExpanded(!notchState.isExpanded)
+        } else if activePanel?.isVisible == true {
             activePanel?.close()
         } else {
             showPanel()
@@ -100,18 +108,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if showsInNotch {
             panel = notchPanel ?? makeNotchPanel()
             notchPanel = panel
-            notchExpanded = false
             let hostingView = NSHostingView(rootView: NotchLyricsView(
                 model: model,
-                onExpandedChange: { [weak self] expanded in
-                    self?.notchExpanded = expanded
-                    self?.placeNotchPanel()
-                },
+                state: notchState,
+                onCollapse: { [weak self] in self?.setNotchExpanded(false) },
                 onTogglePlacement: { [weak self] in self?.setShowsInNotch(false) }
             ))
             hostingView.sizingOptions = []
             panel.contentView = hostingView
-            placeNotchPanel()
+            setNotchExpanded(false)
         } else {
             panel = self.panel ?? makePanel()
             self.panel = panel
@@ -139,6 +144,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         showPanel()
     }
 
+    /// The collapsed bar lets every click through to the window underneath; only
+    /// the expanded popup takes the pointer.
+    private func setNotchExpanded(_ expanded: Bool) {
+        guard let notchPanel else { return }
+        notchState.isPointerOver = false
+        notchState.isExpanded = expanded
+        notchPanel.ignoresMouseEvents = !expanded
+        placeNotchPanel()
+        if expanded { notchPanel.makeKey() }
+    }
+
+    private func updatePointerOverNotch() {
+        guard showsInNotch, let notchPanel, notchPanel.isVisible, !notchState.isExpanded else { return }
+        let over = notchPanel.frame.contains(NSEvent.mouseLocation)
+        if over != notchState.isPointerOver { notchState.isPointerOver = over }
+    }
+
     /// Hangs the notch panel from the bottom of the menu bar, centred on the
     /// notch, or on the main screen when no screen has one.
     @objc private func placeNotchPanel() {
@@ -146,7 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
               let screen = NSScreen.screens.first(where: { $0.safeAreaInsets.top > 0 }) ?? NSScreen.main
         else { return }
         let menuBarHeight = max(screen.safeAreaInsets.top, screen.frame.maxY - screen.visibleFrame.maxY)
-        let size = notchExpanded ? NotchLyricsView.expandedSize : NotchLyricsView.collapsedSize
+        let size = notchState.isExpanded ? NotchLyricsView.expandedSize : NotchLyricsView.collapsedSize
         notchPanel.setFrame(NSRect(
             x: screen.frame.midX - size.width / 2,
             y: screen.frame.maxY - menuBarHeight - size.height,

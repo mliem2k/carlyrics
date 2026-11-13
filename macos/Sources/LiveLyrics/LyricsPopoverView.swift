@@ -163,6 +163,7 @@ struct LyricsPopoverView: View {
             }
             .onChange(of: model.lines) { _ in followsPlayback = true }
             .onAppear {
+                proxy.scrollTo(model.currentLineIndex.map { model.lines[$0].id }, anchor: .center)
                 let follows = $followsPlayback
                 scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
                     if event.scrollingDeltaY != 0 { follows.wrappedValue = false }

@@ -1,27 +1,44 @@
 import SwiftUI
 
-/// A black bar hanging from the notch with the previous, current and next line. Hovering it opens
-/// the full popup in place, with the playback controls.
+/// What the app delegate drives: the menu bar icon expands the bar, and the
+/// pointer passing over the click-through bar fades it.
+@MainActor
+final class NotchState: ObservableObject {
+    @Published var isExpanded = false
+    @Published var isPointerOver = false
+}
+
+/// A black bar hanging from the notch with the previous, current and next line.
+/// The menu bar icon opens the full popup in place, with the playback controls.
 struct NotchLyricsView: View {
     static let collapsedSize = NSSize(width: 440, height: 74)
     static let expandedSize = NSSize(width: 440, height: 280)
 
     @ObservedObject var model: LyricsViewModel
-    /// Asks the window to take `expandedSize` or `collapsedSize` before the content changes.
-    var onExpandedChange: @MainActor (Bool) -> Void
+    @ObservedObject var state: NotchState
+    var onCollapse: @MainActor () -> Void
     var onTogglePlacement: @MainActor () -> Void
-    @State private var isExpanded = false
     @State private var collapseTask: Task<Void, Never>?
 
     var body: some View {
         Group {
-            if isExpanded {
+            if state.isExpanded {
                 LyricsPopoverView(model: model, isInNotch: true, onTogglePlacement: onTogglePlacement)
+                    .onHover { hovering in
+                        collapseTask?.cancel()
+                        guard !hovering else { return }
+                        collapseTask = Task {
+                            if await waitToHide(after: .seconds(0.6)) { onCollapse() }
+                        }
+                    }
             } else {
                 collapsedLines
                     .padding(.horizontal, 18)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.black)
+                    // Nearly clear while the pointer is over it, so what is underneath shows.
+                    .opacity(state.isPointerOver ? 0.12 : 1)
+                    .animation(.easeOut(duration: 0.15), value: state.isPointerOver)
             }
         }
         // Round only the bottom corners: the top edge meets the menu bar under the notch.
@@ -30,16 +47,6 @@ struct NotchLyricsView: View {
         .padding(.top, -18)
         .ignoresSafeArea()
         .preferredColorScheme(.dark)
-        .onHover { hovering in
-            collapseTask?.cancel()
-            if hovering {
-                setExpanded(true)
-            } else {
-                collapseTask = Task {
-                    if await waitToHide(after: .seconds(0.6)) { setExpanded(false) }
-                }
-            }
-        }
     }
 
     @ViewBuilder
@@ -69,11 +76,5 @@ struct NotchLyricsView: View {
             .font(.system(size: 12, design: .rounded))
             .foregroundStyle(.white.opacity(0.45))
             .lineLimit(1)
-    }
-
-    private func setExpanded(_ expanded: Bool) {
-        guard expanded != isExpanded else { return }
-        onExpandedChange(expanded)
-        isExpanded = expanded
     }
 }
