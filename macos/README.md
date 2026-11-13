@@ -1,6 +1,6 @@
 # LiveLyrics for macOS
 
-LiveLyrics for macOS shows synced lyrics for the current Spotify desktop track in a small popup in the top right corner. Hover the popup for previous, play/pause and next. Scroll to read ahead, then click Sync to jump back to the current line. Drag its edges to resize it; it remembers its size and position. The button beside Quit moves it under the notch instead, as a black bar with the previous, current and next line (on a screen without a notch it hangs from the middle of the menu bar). Clicks pass through the bar and it fades while the pointer is over it. There the menu bar icon opens and closes the full popup; in the corner it shows or hides the popup.
+LiveLyrics for macOS shows synced lyrics for the current Spotify desktop track in a small popup in the top right corner. Hover the popup for previous, play/pause and next. Scroll to read ahead, then click Sync to jump back to the current line. Drag its edges to resize it; it remembers its size and position. The button beside Quit moves it under the notch instead, as a black bar with the previous, current and next line (on a screen without a notch it hangs from the middle of the menu bar). Clicks pass through the bar and it fades while the pointer is over it. There the menu bar icon opens and closes the full popup; in the corner it shows or hides the popup. Right click the icon to quit.
 
 ## Install
 

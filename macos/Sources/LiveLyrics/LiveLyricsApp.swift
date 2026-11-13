@@ -39,7 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         icon?.accessibilityDescription = "LiveLyrics"
         item.button?.image = icon
         item.button?.target = self
-        item.button?.action = #selector(togglePanel)
+        item.button?.action = #selector(statusItemClicked)
+        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         statusItem = item
 
         NotificationCenter.default.addObserver(
@@ -90,6 +91,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         panel.contentMinSize = minimum
         panel.setFrame(frame, display: true)
+    }
+
+    /// A right click or control click opens a menu with Quit; a plain click toggles the popup.
+    @objc private func statusItemClicked() {
+        guard let event = NSApp.currentEvent,
+              event.type == .rightMouseUp || event.modifierFlags.contains(.control),
+              let statusItem
+        else { return togglePanel() }
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Quit LiveLyrics", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        // Attached only for this click, so a plain click keeps calling the action.
+        statusItem.menu = menu
+        statusItem.button?.performClick(nil)
+        statusItem.menu = nil
     }
 
     /// Under the notch the icon opens and closes the full popup; in the corner it shows and hides it.
